@@ -66,7 +66,9 @@ struct MainTabView: View {
         .task { await viewModel.load(authManager: authManager) }
         .onChange(of: viewModel.streamSettings) { viewModel.saveSettings() }
         .fullScreenCover(item: $gameToPlay) { game in
-            StreamView(game: game, settings: viewModel.streamSettings, onDismiss: { gameToPlay = nil })
+            StreamView(game: game,
+                       settings: SmartStreamOptimizer.settings(for: game, preferred: viewModel.streamSettings),
+                       onDismiss: { gameToPlay = nil })
                 .environment(authManager)
                 .environment(viewModel)
         }
