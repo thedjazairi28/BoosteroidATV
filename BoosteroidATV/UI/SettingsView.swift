@@ -27,6 +27,12 @@ struct SettingsView: View {
                     OptionRow(title: "FPS", options: fpsOptions,
                               selection: $viewModel.streamSettings.fps)
                 }
+                section("Optimisation intelligente") {
+                    SettingsToggle("Profil automatique par jeu", isOn: $viewModel.streamSettings.smartOptimizationEnabled)
+                    Text("Activé : priorité à la réactivité pour les jeux compétitifs, à la qualité pour les aventures. Les paramètres sont appliqués au démarrage uniquement. Désactive pour conserver les réglages manuels.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
                 section("Bitrate") {
                     SettingsToggle("Automatic bitrate", isOn: $viewModel.streamSettings.automaticBitrate)
                     if !viewModel.streamSettings.automaticBitrate {
@@ -77,8 +83,11 @@ struct SettingsView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-                section("Overlay") {
-                    SettingsToggle("Performance overlay", isOn: $viewModel.streamSettings.showStatsOverlay)
+                section("Diagnostics") {
+                    SettingsToggle("Afficher les diagnostics pendant le jeu", isOn: $viewModel.streamSettings.showStatsOverlay)
+                    Text("Masqués par défaut. Le bouton Performance Overlay dans le jeu permet aussi de les activer pour la session.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
                 section("Region") {
                     SettingsToggle("Allow connection to distant regions", isOn: allowDistantRegionsBinding)
