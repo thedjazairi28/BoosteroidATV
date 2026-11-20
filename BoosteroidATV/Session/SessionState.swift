@@ -85,11 +85,11 @@ nonisolated enum RumbleIntensity: String, Codable, CaseIterable, Hashable {
 
     var displayName: String {
         switch self {
-        case .automatic: return "Automatic"
-        case .weak: return "Weak"
-        case .medium: return "Medium"
-        case .strong: return "Strong"
-        case .veryStrong: return "Very Strong"
+        case .automatic: return "Automatique"
+        case .weak: return "Faible"
+        case .medium: return "Moyenne"
+        case .strong: return "Forte"
+        case .veryStrong: return "Très forte"
         }
     }
 
