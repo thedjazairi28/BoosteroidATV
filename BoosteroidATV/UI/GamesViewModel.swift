@@ -8,6 +8,7 @@ class GamesViewModel {
     var isCatalogLoading = false
     var catalogError: String?
     private var hasLoadedCatalog = false
+    private var lastCatalogAttempt: Date?
     var activeSessions: [ActiveSessionInfo] = []
     var isLoading = false
     var error: String?
@@ -94,17 +95,42 @@ class GamesViewModel {
     /// that every Boosteroid collection is already represented.
     func loadCatalog(authManager: AuthManager, force: Bool = false) async {
         guard !isCatalogLoading, (force || !hasLoadedCatalog) else { return }
+
+        // A 5-minute cooldown applies even when the user presses Refresh.
+        // The endpoint has a shared quota; repeated full rescans caused 429.
+        if let lastCatalogAttempt, Date().timeIntervalSince(lastCatalogAttempt) < 300 {
+            return
+        }
+
         isCatalogLoading = true
         catalogError = nil
         defer { isCatalogLoading = false }
 
+        // Home and Catalog can launch tasks at the same moment. Wait until
+        // the initial library pagination finishes rather than hammering
+        // Boosteroid with simultaneous library and catalog scans.
+        while isLoading {
+            if Task.isCancelled { return }
+            try? await Task.sleep(for: .milliseconds(250))
+        }
+        if Task.isCancelled { return }
+
+        lastCatalogAttempt = Date()
         do {
             let cookies = try await authManager.resolveCookies()
-            catalog = try await client.fetchBrowsableCatalog(cookies: cookies)
+            let fetched = try await client.fetchBrowsableCatalog(cookies: cookies)
+            if Task.isCancelled { return }
+            catalog = fetched
             reconcileCatalogWithLibrary()
             hasLoadedCatalog = true
         } catch {
-            catalogError = error.localizedDescription
+            // Keep all already retrieved games and library cards available.
+            reconcileCatalogWithLibrary()
+            if error.localizedDescription.contains("429") {
+                catalogError = "Boosteroid limite temporairement les recherches (HTTP 429). Les jeux déjà chargés restent disponibles. Réessaie plus tard."
+            } else {
+                catalogError = "Mise à jour du catalogue indisponible : \\(error.localizedDescription)"
+            }
         }
     }
 
