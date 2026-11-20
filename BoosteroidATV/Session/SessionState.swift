@@ -369,6 +369,7 @@ nonisolated struct BoosteroidApplicationDTO: Decodable {
     let coverImage: String?
     let bannerImage: String?
     let installed: Bool
+    let stores: [String: String]
     let genres: [BoosteroidNamedValue]
     let tags: [BoosteroidNamedValue]
     let developer: BoosteroidNamedValue?
@@ -395,6 +396,7 @@ nonisolated struct BoosteroidApplicationDTO: Decodable {
         bannerImage = (try? c.decodeIfPresent(String.self, forKey: .bannerImage))
             ?? (try? c.decodeIfPresent(String.self, forKey: .bannerImageSnake))
         installed = (try? c.decode(Bool.self, forKey: .installed)) ?? true
+        stores = (try? c.decode([String: String].self, forKey: .stores)) ?? [:]
         genres = (try? c.decode([BoosteroidNamedValue].self, forKey: .genres))
             ?? (try? c.decode([BoosteroidNamedValue].self, forKey: .genre)) ?? []
         tags = (try? c.decode([BoosteroidNamedValue].self, forKey: .tags)) ?? []
@@ -413,7 +415,7 @@ nonisolated struct BoosteroidApplicationDTO: Decodable {
     }
 
     private enum CodingKeys: String, CodingKey {
-        case id, name, icon, installed, genres, genre, tags, developer, publisher
+        case id, name, icon, installed, stores, genres, genre, tags, developer, publisher
         case summary, description, about, rating, pegi, esrb
         case bannerImage
         case bannerImageSnake = "banner_image"
@@ -431,6 +433,11 @@ nonisolated struct BoosteroidApplicationDTO: Decodable {
 
 nonisolated struct BoosteroidPaginatedApplications: Decodable {
     let data: [BoosteroidApplicationDTO]
+    let meta: PaginationMeta?
+
+    struct PaginationMeta: Decodable {
+        let last_page: Int?
+    }
 }
 
 nonisolated struct GameInfo: Identifiable, Equatable {
@@ -439,6 +446,8 @@ nonisolated struct GameInfo: Identifiable, Equatable {
     let boxArtUrl: String?
     let heroBannerUrl: String?
     var isInLibrary: Bool
+    let requiresInstallation: Bool
+    let storeIdentifiers: [String]
     let genres: [String]
     let tags: [String]
     let developer: String?
@@ -448,12 +457,15 @@ nonisolated struct GameInfo: Identifiable, Equatable {
 
     init(id: String, title: String, boxArtUrl: String?, heroBannerUrl: String? = nil, isInLibrary: Bool,
          genres: [String] = [], tags: [String] = [], developer: String? = nil,
-         publisher: String? = nil, summary: String? = nil, rating: String? = nil) {
+         publisher: String? = nil, summary: String? = nil, rating: String? = nil,
+         requiresInstallation: Bool = false, storeIdentifiers: [String] = []) {
         self.id = id
         self.title = title
         self.boxArtUrl = boxArtUrl
         self.heroBannerUrl = heroBannerUrl
         self.isInLibrary = isInLibrary
+        self.requiresInstallation = requiresInstallation
+        self.storeIdentifiers = storeIdentifiers
         self.genres = genres
         self.tags = tags
         self.developer = developer
@@ -473,6 +485,8 @@ nonisolated struct GameInfo: Identifiable, Equatable {
         // enlarged low-resolution tile.
         self.heroBannerUrl = dto.bannerImage
         self.isInLibrary = dto.installed
+        self.requiresInstallation = !dto.installed
+        self.storeIdentifiers = dto.stores.keys.sorted()
         self.genres = dto.genres.compactMap(\.name)
         self.tags = dto.tags.compactMap(\.name)
         self.developer = dto.developer?.name
@@ -497,7 +511,9 @@ nonisolated struct GameInfo: Identifiable, Equatable {
             developer: detail.developer ?? developer,
             publisher: detail.publisher ?? publisher,
             summary: detail.summary ?? summary,
-            rating: detail.rating ?? rating
+            rating: detail.rating ?? rating,
+            requiresInstallation: requiresInstallation,
+            storeIdentifiers: storeIdentifiers.isEmpty ? detail.storeIdentifiers : storeIdentifiers
         )
     }
 }
