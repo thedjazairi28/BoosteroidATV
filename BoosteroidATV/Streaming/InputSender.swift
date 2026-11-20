@@ -297,6 +297,84 @@ final class InputSender: InputEventHandler {
         }
     }
 
+    /// Type a short ASCII string into the already-focused remote Windows field.
+    /// All key frames are sent within one task to preserve character order.
+    /// Unknown characters fail the WHOLE input rather than truncating passwords.
+    /// Input is never persisted or logged in the application.
+    @discardableResult
+    func typeRemoteText(_ text: String) -> Bool {
+        guard !text.isEmpty else { return false }
+        let parsed = text.map(Self.mapCharacter)
+        guard parsed.allSatisfy({ $0 != nil }) else { return false }
+        let strokes = parsed.compactMap { $0 }
+        Task { [controlChannel] in
+            for stroke in strokes {
+                if stroke.shift {
+                    await controlChannel.send(type: "keyboard", action: "button",
+                                              fields: ["isPressed": true, "code": 0xA0])
+                }
+                await controlChannel.send(type: "keyboard", action: "button",
+                                          fields: ["isPressed": true, "code": Int(stroke.vk)])
+                try? await Task.sleep(nanoseconds: 25_000_000)
+                await controlChannel.send(type: "keyboard", action: "button",
+                                          fields: ["isPressed": false, "code": Int(stroke.vk)])
+                if stroke.shift {
+                    await controlChannel.send(type: "keyboard", action: "button",
+                                              fields: ["isPressed": false, "code": 0xA0])
+                }
+                try? await Task.sleep(nanoseconds: 20_000_000)
+            }
+        }
+        return true
+    }
+
+    private static func mapCharacter(_ character: Character) -> (vk: UInt16, shift: Bool)? {
+        guard character.unicodeScalars.count == 1,
+              let scalar = character.unicodeScalars.first,
+              scalar.value <= 127 else { return nil }
+        let ascii = UInt16(scalar.value)
+        if (65...90).contains(ascii) { return (ascii, true) }
+        if (97...122).contains(ascii) { return (ascii - 32, false) }
+        if (48...57).contains(ascii) { return (ascii, false) }
+        if ascii == 96 { return (0xC0, false) }
+        if ascii == 126 { return (0xC0, true) }
+        // Windows virtual keys for the en-US layout configured by the client.
+        switch character {
+        case " ": return (0x20, false)
+        case "-": return (0xBD, false)
+        case "_": return (0xBD, true)
+        case "=": return (0xBB, false)
+        case "+": return (0xBB, true)
+        case ".": return (0xBE, false)
+        case ">": return (0xBE, true)
+        case ",": return (0xBC, false)
+        case "<": return (0xBC, true)
+        case "/": return (0xBF, false)
+        case "?": return (0xBF, true)
+        case ";": return (0xBA, false)
+        case ":": return (0xBA, true)
+        case "'": return (0xDE, false)
+        case "\"": return (0xDE, true)
+        case "[": return (0xDB, false)
+        case "{": return (0xDB, true)
+        case "]": return (0xDD, false)
+        case "}": return (0xDD, true)
+        case "\\": return (0xDC, false)
+        case "|": return (0xDC, true)
+        case "!": return (0x31, true)
+        case "@": return (0x32, true)
+        case "#": return (0x33, true)
+        case "$": return (0x34, true)
+        case "%": return (0x35, true)
+        case "^": return (0x36, true)
+        case "&": return (0x37, true)
+        case "*": return (0x38, true)
+        case "(": return (0x39, true)
+        case ")": return (0x30, true)
+        default: return nil
+        }
+    }
+
     // MARK: - Mouse
 
     func setMouseMode(enabled: Bool, x: Int, y: Int) {
