@@ -4,6 +4,7 @@ import SwiftUI
 /// keyboard can enter these native tvOS TextField/SecureField controls.
 /// Credentials are NOT automatically injected when a remote window appears.
 struct GameAccountsView: View {
+    var embeddedInTab = false
     @Environment(\.dismiss) private var dismiss
     @State private var selectedProvider: GameAccountProvider = .rockstar
     @State private var username = ""
@@ -20,8 +21,10 @@ struct GameAccountsView: View {
                         Label("Comptes de jeux", systemImage: "lock.shield")
                             .font(.largeTitle.bold())
                         Spacer()
-                        Button("Fermer") { close() }
-                            .buttonStyle(.bordered)
+                        if !embeddedInTab {
+                            Button("Fermer") { close() }
+                                .buttonStyle(.bordered)
+                        }
                     }
 
                     Text("Enregistrement local dans le Keychain de cette Apple TV. Aucun mot de passe n'est envoyé à Boosteroid avant une action explicite dans le jeu.")
@@ -105,7 +108,7 @@ struct GameAccountsView: View {
         .tint(BoosteroidTheme.violet)
         .onAppear { reload() }
         .onDisappear { password = "" }
-        .onExitCommand(perform: close)
+        .onExitCommand { if !embeddedInTab { close() } }
     }
 
     private func select(_ provider: GameAccountProvider) {
