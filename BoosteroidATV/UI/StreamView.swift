@@ -85,6 +85,7 @@ struct StreamView: View {
     /// real cursor because pointer mode pins it to (0,0) when switched on.
     @State private var localCursor: CGPoint = .zero
     @State private var showKeyboard = false
+    @State private var showTextEntry = false
     /// The "Performance Overlay" pill's own Enable/Disable flyout.
     @State private var showPerformanceFlyout = false
     /// nil = follow the session's saved Settings value; set once the user
@@ -167,7 +168,7 @@ struct StreamView: View {
                     streamController: controller,
                     // Focus must reach SwiftUI whenever an overlay is up, or the
                     // on-screen keyboard's keys can't be selected.
-                    showOverlay: showOverlay || showKeyboard,
+                    showOverlay: showOverlay || showKeyboard || showTextEntry,
                     // Play/Pause (Siri Remote) opens/closes the bar: closes
                     // the keyboard or Performance Overlay flyout first if
                     // either is up, otherwise toggles the bar itself both
@@ -197,7 +198,16 @@ struct StreamView: View {
                 if pointerMode {
                     pointerCursor
                 }
-                if showKeyboard {
+                if showTextEntry {
+                    VStack {
+                        Spacer()
+                        RemoteTextEntryView(
+                            inputSender: controller.inputSender,
+                            onClose: { showTextEntry = false }
+                        )
+                        .padding(.bottom, 48)
+                    }
+                } else if showKeyboard {
                     // Bottom-center, not floating mid-screen — matches the
                     // reference design and keeps it clear of the game's own
                     // center-screen UI.
@@ -343,7 +353,9 @@ struct StreamView: View {
     /// the raw-input and focus-system paths, and the gamepad combo) so they
     /// can't drift apart.
     private func togglePauseBar() {
-        if showKeyboard {
+        if showTextEntry {
+            showTextEntry = false
+        } else if showKeyboard {
             showKeyboard = false
         } else if showPerformanceFlyout {
             showPerformanceFlyout = false
@@ -520,6 +532,10 @@ struct StreamView: View {
                     topBarPill("Keyboard", systemImage: "keyboard") {
                         showOverlay = false
                         showKeyboard = true
+                    }
+                    topBarPill("Saisie iPhone", systemImage: "iphone") {
+                        showOverlay = false
+                        showTextEntry = true
                     }
                     topBarPill("Pointer", systemImage: pointerMode ? "cursorarrow.click.2" : "cursorarrow",
                                active: pointerMode) {
