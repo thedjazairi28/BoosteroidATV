@@ -10,12 +10,12 @@ struct MainTabView: View {
     @State private var selectedTab: AppTab = .home
 
     private enum AppTab: Hashable {
-        case home, catalog, library, settings, help
+        case home, catalog, library, accounts, settings, help
     }
 
     var body: some View {
         TabView(selection: $selectedTab) {
-            Tab("Home", systemImage: "house.fill", value: AppTab.home) {
+            Tab("Accueil", systemImage: "house.fill", value: AppTab.home) {
                 HomeView(
                     featuredGame: viewModel.lastPlayedGame ?? viewModel.library.first,
                     favoriteGames: viewModel.favoriteGames,
@@ -38,7 +38,7 @@ struct MainTabView: View {
                 .task { await viewModel.loadCatalog(authManager: authManager) }
             }
 
-            Tab("Library", systemImage: "books.vertical.fill", value: AppTab.library) {
+            Tab("Bibliothèque", systemImage: "books.vertical.fill", value: AppTab.library) {
                 LibraryView(
                     games: viewModel.library,
                     isLoading: viewModel.isLoading,
@@ -46,11 +46,15 @@ struct MainTabView: View {
                 )
             }
 
-            Tab("Settings", systemImage: "gearshape.fill", value: AppTab.settings) {
+            Tab("Comptes", systemImage: "key.fill", value: AppTab.accounts) {
+                GameAccountsView(embeddedInTab: true)
+            }
+
+            Tab("Réglages", systemImage: "gearshape.fill", value: AppTab.settings) {
                 SettingsView()
             }
 
-            Tab("Help", systemImage: "questionmark.circle.fill", value: AppTab.help) {
+            Tab("Aide", systemImage: "questionmark.circle.fill", value: AppTab.help) {
                 HelpView()
             }
         }
@@ -96,7 +100,7 @@ struct MainTabView: View {
     }
 
     private func moveTab(by offset: Int) {
-        let tabs: [AppTab] = [.home, .catalog, .library, .settings, .help]
+        let tabs: [AppTab] = [.home, .catalog, .library, .accounts, .settings, .help]
         guard let current = tabs.firstIndex(of: selectedTab) else { return }
         let destination = current + offset
         guard tabs.indices.contains(destination) else { return }
