@@ -925,7 +925,7 @@ struct StreamView: View {
 /// remote gives no press-and-hold semantics here.
 struct VirtualKeyboardView: View {
     /// Where the key events go. Weakly held by the caller's InputSender.
-    let inputHandler: InputEventHandler?
+    let inputHandler: InputSender?
     let onClose: () -> Void
 
     @State private var shifted = false
@@ -995,6 +995,21 @@ struct VirtualKeyboardView: View {
                 keyButton("→") { send(vk: VK.right) }
                 keyButton("Close", width: 72, tint: .red) { onClose() }
             }
+            HStack(spacing: 6) {
+                keyButton("@") { sendShifted(vk: 0x32) }
+                keyButton("!") { sendShifted(vk: 0x31) }
+                keyButton("#") { sendShifted(vk: 0x33) }
+                keyButton("$") { sendShifted(vk: 0x34) }
+                keyButton("%") { sendShifted(vk: 0x35) }
+                keyButton("&") { sendShifted(vk: 0x37) }
+                keyButton("*") { sendShifted(vk: 0x38) }
+                keyButton("(") { sendShifted(vk: 0x39) }
+                keyButton(")") { sendShifted(vk: 0x30) }
+                keyButton("_") { sendShifted(vk: VK.minus) }
+                keyButton("+") { sendShifted(vk: VK.equals) }
+                keyButton(":") { sendShifted(vk: VK.semicolon) }
+                keyButton("?") { sendShifted(vk: VK.slash) }
+            }
         }
         .padding(16)
         // Restored an opaque enclosing panel: each key's own .bordered fill
@@ -1017,11 +1032,13 @@ struct VirtualKeyboardView: View {
         .frame(minWidth: width, minHeight: 40)
     }
 
-    /// Tap = press and release. `shifted` is reported as the modifier bit the
-    /// hardware-keyboard path uses, so capitals and symbols behave the same way.
+    /// sendKeyEvent ignores modifier bits in the actual websocket sender.
+    /// Use explicitly ordered Shift key-down/key-up instead.
     private func send(vk: UInt16) {
-        let modifiers: UInt16 = shifted ? 0x0001 : 0
-        inputHandler?.sendKeyEvent(down: true, vk: vk, scancode: 0, modifiers: modifiers)
-        inputHandler?.sendKeyEvent(down: false, vk: vk, scancode: 0, modifiers: modifiers)
+        inputHandler?.sendKeyCombo(shifted ? [VK.shift, vk] : [vk])
+    }
+
+    private func sendShifted(vk: UInt16) {
+        inputHandler?.sendKeyCombo([VK.shift, vk])
     }
 }
