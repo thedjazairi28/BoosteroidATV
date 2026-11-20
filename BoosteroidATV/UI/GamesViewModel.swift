@@ -100,7 +100,7 @@ class GamesViewModel {
 
         do {
             let cookies = try await authManager.resolveCookies()
-            catalog = try await client.fetchInstallableCatalog(cookies: cookies)
+            catalog = try await client.fetchBrowsableCatalog(cookies: cookies)
             reconcileCatalogWithLibrary()
             hasLoadedCatalog = true
         } catch {
