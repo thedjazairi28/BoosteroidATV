@@ -1,9 +1,10 @@
-name: Build experimental tvOS IPA
+name: Build BoosteroidATV experimental tvOS IPA
 
 on:
   push:
     branches:
       - feature/unified-catalog-v1
+      - feature/v2-smart-experience
   workflow_dispatch:
 
 permissions:
@@ -24,12 +25,12 @@ jobs:
       - name: Build unsigned IPA
         run: |
           chmod +x scripts/build-ipa.sh
-          VERSION=2026.11.20.1 ./scripts/build-ipa.sh
+          VERSION=2026.11.21.1 ./scripts/build-ipa.sh
 
       - name: Upload unsigned IPA for atvloadly
         uses: actions/upload-artifact@v4
         with:
-          name: BoosteroidATV-unified-catalog-unsigned
+          name: BoosteroidATV-v2-unsigned
           path: build/*.ipa
           if-no-files-found: error
           retention-days: 7
