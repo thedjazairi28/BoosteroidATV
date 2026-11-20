@@ -85,6 +85,48 @@ actor BoosteroidClient {
     //   GET /api/v1/boostore/carousel?isSub=true   — hero banner carousel
     //   GET /api/v1/boostore/applications/{id}     — single game detail
 
+    /// Collection 5 is the "Installer" catalog in the user's captured Boosteroid
+    /// web traffic (2026-11-20). It is separate from /applications/installed.
+    /// This endpoint is undocumented and may change without notice.
+    ///
+    /// Fetch every page, not only the first 50 titles. The API response has
+    /// meta.last_page; bound the crawl to avoid runaway requests if it changes.
+    func fetchInstallableCatalog(cookies: [String: String]) async throws -> [GameInfo] {
+        func fetchPage(_ pageNumber: Int) async throws -> BoosteroidPaginatedApplications {
+            var components = URLComponents(string: "\(apiBase)/v1/boostore/applications")!
+            components.queryItems = [
+                URLQueryItem(name: "collection", value: "5"),
+                URLQueryItem(name: "page", value: String(pageNumber)),
+                URLQueryItem(name: "paginate", value: "50")
+            ]
+            let (data, response) = try await session.data(
+                for: authenticatedRequest(components.url!, cookies: cookies)
+            )
+            guard (response as? HTTPURLResponse)?.statusCode == 200 else {
+                throw BoosteroidClientError.requestFailed(
+                    "fetchInstallableCatalog page \(pageNumber)",
+                    "HTTP \((response as? HTTPURLResponse)?.statusCode ?? 0)"
+                )
+            }
+            return try JSONDecoder().decode(BoosteroidPaginatedApplications.self, from: data)
+        }
+
+        let first = try await fetchPage(1)
+        let pageCount = min(30, max(1, first.meta?.last_page ?? 1))
+        var games = first.data.map(GameInfo.init)
+
+        if pageCount > 1 {
+            for number in 2...pageCount {
+                let nextPage = try await fetchPage(number)
+                games.append(contentsOf: nextPage.data.map(GameInfo.init))
+            }
+        }
+
+        // A title may occur more than once across pages or catalog sections.
+        var seen = Set<String>()
+        return games.filter { seen.insert($0.id).inserted }
+    }
+
     func fetchLibrary(cookies: [String: String]) async throws -> [GameInfo] {
         let url = URL(string: "\(apiBase)/v1/boostore/applications/installed?page=1&paginate=50")!
         let (data, response) = try await session.data(for: authenticatedRequest(url, cookies: cookies))
