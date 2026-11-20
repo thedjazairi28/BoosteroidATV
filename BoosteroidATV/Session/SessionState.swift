@@ -13,6 +13,9 @@ nonisolated struct StreamSettings: Codable, Equatable {
     /// off, `manualBitrateMbps` (3–80 Mbps, like the official client) is used.
     /// Sent to the server as `stream/bandwidth` in bps.
     var automaticBitrate: Bool = true
+    /// Automatically adapt settings to the selected game at launch.
+    /// UserDefaults migration defaults to on; disabling retains manual settings.
+    var smartOptimizationEnabled: Bool = true
     var manualBitrateMbps: Int = 20 { didSet { manualBitrateMbps = min(80, max(3, manualBitrateMbps)) } }
     /// Radial deadzone applied to analog stick axes (0.0–1.0). Default 15%.
     var controllerDeadzone: Double = 0.15
@@ -43,6 +46,7 @@ nonisolated struct StreamSettings: Codable, Equatable {
     private enum CodingKeys: String, CodingKey {
         case resolution, fps, maxBitrateKbps, codec, micEnabled
         case automaticBitrate, manualBitrateMbps, controllerDeadzone
+        case smartOptimizationEnabled
         case showStatsOverlay, rumbleEnabled, rumbleIntensity
     }
 
@@ -58,6 +62,7 @@ nonisolated struct StreamSettings: Codable, Equatable {
         codec = try container.decodeIfPresent(VideoCodec.self, forKey: .codec) ?? .h264
         micEnabled = try container.decodeIfPresent(Bool.self, forKey: .micEnabled) ?? false
         automaticBitrate = try container.decodeIfPresent(Bool.self, forKey: .automaticBitrate) ?? true
+        smartOptimizationEnabled = try container.decodeIfPresent(Bool.self, forKey: .smartOptimizationEnabled) ?? true
         manualBitrateMbps = try container.decodeIfPresent(Int.self, forKey: .manualBitrateMbps) ?? 20
         controllerDeadzone = try container.decodeIfPresent(Double.self, forKey: .controllerDeadzone) ?? 0.15
         showStatsOverlay = try container.decodeIfPresent(Bool.self, forKey: .showStatsOverlay) ?? false
