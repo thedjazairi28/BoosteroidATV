@@ -51,7 +51,7 @@ struct CatalogView: View {
                             Text("Catalogue")
                                 .font(.largeTitle.bold())
                                 .foregroundStyle(.white)
-                            Text("\(filteredGames.count) jeux affichés · Bibliothèque + Installer")
+                            Text("\(filteredGames.count) jeux affichés · Collections Boosteroid et bibliothèque")
                                 .foregroundStyle(.secondary)
                         }
                         Spacer()
