@@ -31,12 +31,10 @@ struct RemoteTextEntryView: View {
                 if isPassword {
                     SecureField("Mot de passe à envoyer", text: $text)
                         .focused($textFieldFocused)
-                        .textFieldStyle(.roundedBorder)
                         .submitLabel(.done)
                 } else {
                     TextField("E-mail, identifiant ou texte", text: $text)
                         .focused($textFieldFocused)
-                        .textFieldStyle(.roundedBorder)
                         .submitLabel(.done)
                 }
             }
