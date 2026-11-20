@@ -22,8 +22,19 @@ struct SettingsView: View {
         // "Settings".
         ScrollView {
             VStack(alignment: .leading, spacing: 36) {
-                section("Stream Quality") {
-                    OptionRow(title: "Resolution", options: resolutions,
+                section("Comptes de jeux") {
+                    Button {
+                        showGameAccounts = true
+                    } label: {
+                        Label("Gérer mes identifiants Rockstar, Steam, Epic et Xbox", systemImage: "lock.shield")
+                    }
+                    .buttonStyle(.borderedProminent)
+                    Text("Sauvegarde locale Keychain ; remplissage sur demande uniquement pendant le jeu.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                section("Qualité du streaming") {
+                    OptionRow(title: "Résolution", options: resolutions,
                               selection: $viewModel.streamSettings.resolution)
                     OptionRow(title: "FPS", options: fpsOptions,
                               selection: $viewModel.streamSettings.fps)
@@ -34,28 +45,28 @@ struct SettingsView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-                section("Bitrate") {
-                    SettingsToggle("Automatic bitrate", isOn: $viewModel.streamSettings.automaticBitrate)
+                section("Débit vidéo") {
+                    SettingsToggle("Débit automatique", isOn: $viewModel.streamSettings.automaticBitrate)
                     if !viewModel.streamSettings.automaticBitrate {
                         StepperRow(
-                            title: "Max bitrate",
+                            title: "Débit maximal",
                             value: "\(viewModel.streamSettings.manualBitrateMbps) Mbps",
                             onDecrease: { viewModel.streamSettings.manualBitrateMbps -= 5 },
                             onIncrease: { viewModel.streamSettings.manualBitrateMbps += 5 }
                         )
                     }
                 }
-                section("Controller") {
+                section("Manette") {
                     StepperRow(
-                        title: "Deadzone",
+                        title: "Zone morte",
                         value: "\(Int(viewModel.streamSettings.controllerDeadzone * 100))%",
                         onDecrease: { viewModel.streamSettings.controllerDeadzone = max(0, viewModel.streamSettings.controllerDeadzone - 0.05) },
                         onIncrease: { viewModel.streamSettings.controllerDeadzone = min(0.5, viewModel.streamSettings.controllerDeadzone + 0.05) }
                     )
-                    SettingsToggle("Controller rumble", isOn: $viewModel.streamSettings.rumbleEnabled)
+                    SettingsToggle("Vibrations de la manette", isOn: $viewModel.streamSettings.rumbleEnabled)
                     if viewModel.streamSettings.rumbleEnabled {
                         HStack(spacing: 16) {
-                            Text("Rumble intensity")
+                            Text("Intensité des vibrations")
                             Spacer()
                             // Menu dropdown, same reasoning as the region
                             // picker below: a row of buttons per option
@@ -80,19 +91,19 @@ struct SettingsView: View {
                             .tint(.gray)
                         }
                     }
-                    Text("Takes effect the next time a game is started.")
+                    Text("Ce réglage s’appliquera au prochain lancement d’un jeu.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
                 section("Diagnostics") {
                     SettingsToggle("Afficher les diagnostics pendant le jeu", isOn: $viewModel.streamSettings.showStatsOverlay)
-                    Text("Masqués par défaut. Le bouton Performance Overlay dans le jeu permet aussi de les activer pour la session.")
+                    Text("Masqués par défaut. Ils peuvent être activés temporairement depuis le menu de la session.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-                section("Region") {
-                    SettingsToggle("Allow connection to distant regions", isOn: allowDistantRegionsBinding)
-                    Text("When searching for available virtual machines, gain access to more VMs, but may experience disruptions or increased latency.")
+                section("Région du serveur") {
+                    SettingsToggle("Autoriser les serveurs éloignés", isOn: allowDistantRegionsBinding)
+                    Text("Donne accès à davantage de serveurs, mais peut augmenter la latence et les interruptions.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
 
@@ -103,7 +114,7 @@ struct SettingsView: View {
                     }
 
                     HStack(spacing: 16) {
-                        Text("Preferred server location")
+                        Text("Serveur préféré")
                         Spacer()
                         // A grid of ~24 buttons (one per playground) was
                         // unreadable — per feedback, a dropdown Menu (like
@@ -119,9 +130,9 @@ struct SettingsView: View {
                                 Task { await viewModel.setPreferredPlayground(nil, authManager: authManager) }
                             } label: {
                                 if viewModel.preferredPlaygroundId == nil {
-                                    Label("Automatic Location", systemImage: "checkmark")
+                                    Label("Emplacement automatique", systemImage: "checkmark")
                                 } else {
-                                    Text("Automatic Location")
+                                    Text("Emplacement automatique")
                                 }
                             }
                             ForEach(viewModel.playgrounds) { playground in
@@ -145,19 +156,8 @@ struct SettingsView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-                section("Comptes de jeux") {
-                    Button {
-                        showGameAccounts = true
-                    } label: {
-                        Label("Gérer mes identifiants Rockstar, Steam, Epic et Xbox", systemImage: "lock.shield")
-                    }
-                    .buttonStyle(.borderedProminent)
-                    Text("Sauvegarde locale Keychain ; remplissage sur demande uniquement pendant le jeu.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                section("Account") {
-                    Button("Sign Out") { authManager.logout() }
+                section("Compte Boosteroid") {
+                    Button("Se déconnecter") { authManager.logout() }
                         .buttonStyle(.bordered)
                         .tint(.red)
                 }
@@ -194,8 +194,8 @@ struct SettingsView: View {
     /// The Menu button's own label — the currently selected location's name,
     /// or "Automatic Location" while `preferredPlaygroundId` is nil.
     private var selectedPlaygroundLabel: String {
-        guard let id = viewModel.preferredPlaygroundId else { return "Automatic Location" }
-        return viewModel.playgrounds.first(where: { $0.id == id })?.displayName ?? "Automatic Location"
+        guard let id = viewModel.preferredPlaygroundId else { return "Emplacement automatique" }
+        return viewModel.playgrounds.first(where: { $0.id == id })?.displayName ?? "Emplacement automatique"
     }
 
     /// One titled settings group: a bright header over its rows on a subtle
