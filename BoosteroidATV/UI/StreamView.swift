@@ -465,6 +465,8 @@ struct StreamView: View {
             statsItem("FPS", "\(controller.streamFps)")
             statsDivider
             statsItem("Latency", "\(controller.rttMs) ms")
+            statsDivider
+            statsItem("État", streamingHealthLabel)
             if let connectedServerName {
                 statsDivider
                 statsItem("Server", connectedServerName)
@@ -478,6 +480,19 @@ struct StreamView: View {
         .padding(.top, 4)
         .ignoresSafeArea(edges: .top)
         .allowsHitTesting(false)
+    }
+
+    /// Diagnostic indicatif, visible uniquement si l'overlay est activé.
+    /// Le RTT et le nombre de FPS reçus ne permettent PAS à eux seuls de
+    /// distinguer perte Wi-Fi, congestion, GPU du serveur ou décodage local.
+    private var streamingHealthLabel: String {
+        if !controller.controlChannelAlive { return "Commandes coupées" }
+        if controller.streamFps <= 0 || controller.stats.bitrateKbps <= 0 {
+            return "Mesures en cours"
+        }
+        if controller.rttMs > 120 { return "RTT élevé" }
+        if controller.streamFps < 45 { return "FPS reçus faibles" }
+        return "Pas d'alerte"
     }
 
     private var statsDivider: some View {
