@@ -3,6 +3,7 @@ import SwiftUI
 struct SettingsView: View {
     @Environment(AuthManager.self) var authManager
     @Environment(GamesViewModel.self) var viewModel
+    @State private var showGameAccounts = false
 
     private let resolutions: [(String, String)] = [
         ("720p", "1280x720"), ("1080p", "1920x1080"),
@@ -144,6 +145,17 @@ struct SettingsView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
+                section("Comptes de jeux") {
+                    Button {
+                        showGameAccounts = true
+                    } label: {
+                        Label("Gérer mes identifiants Rockstar, Steam, Epic et Xbox", systemImage: "lock.shield")
+                    }
+                    .buttonStyle(.borderedProminent)
+                    Text("Sauvegarde locale Keychain ; remplissage sur demande uniquement pendant le jeu.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
                 section("Account") {
                     Button("Sign Out") { authManager.logout() }
                         .buttonStyle(.bordered)
@@ -159,6 +171,9 @@ struct SettingsView: View {
         // remains white/black for contrast instead of inheriting the app's
         // green launch accent.
         .tint(BoosteroidTheme.violet)
+        .fullScreenCover(isPresented: $showGameAccounts) {
+            GameAccountsView()
+        }
     }
 
     /// Mirrors cloud.boosteroid.com/profile/account/main's "Permitir ligação
