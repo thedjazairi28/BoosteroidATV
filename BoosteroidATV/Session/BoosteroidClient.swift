@@ -23,6 +23,36 @@ actor BoosteroidClient {
 
     private let apiBase = "https://cloud.boosteroid.com/api"
 
+    /// Avoid rapid consecutive catalogue calls from the tvOS client. A single
+    /// actor serialises catalogue requests across concurrent view tasks.
+    private var nextCatalogRequestAt: Date = .distantPast
+
+    private func catalogData(for request: URLRequest) async throws -> (Data, URLResponse) {
+        let wait = max(0, nextCatalogRequestAt.timeIntervalSinceNow)
+        nextCatalogRequestAt = Date().addingTimeInterval(wait + 0.65)
+        if wait > 0 { try await Task.sleep(for: .seconds(wait)) }
+
+        for attempt in 0..<3 {
+            try Task.checkCancellation()
+            let (data, response) = try await session.data(for: request)
+            let http = response as? HTTPURLResponse
+            if http?.statusCode != 429 { return (data, response) }
+
+            // Never retry indefinitely or hammer other endpoints when the
+            // upstream service asks us to slow down.
+            guard attempt < 2 else {
+                throw BoosteroidClientError.requestFailed(
+                    "Catalogue", "HTTP 429 : trop de requêtes, réessaie plus tard")
+            }
+            let retryAfter = (http?.value(forHTTPHeaderField: "Retry-After"))
+                .flatMap(Double.init) ?? 0
+            let delay = min(30.0, max(retryAfter, Double(3 * (attempt + 1))))
+            nextCatalogRequestAt = Date().addingTimeInterval(delay + 0.65)
+            try await Task.sleep(for: .seconds(delay))
+        }
+        throw BoosteroidClientError.requestFailed("Catalogue", "Limite de requêtes atteinte")
+    }
+
     /// The session id to ask `session/details` about, when it differs from what
     /// `last-session` reports.
     ///
@@ -99,9 +129,7 @@ actor BoosteroidClient {
                 URLQueryItem(name: "page", value: String(pageNumber)),
                 URLQueryItem(name: "paginate", value: "50")
             ]
-            let (data, response) = try await session.data(
-                for: authenticatedRequest(components.url!, cookies: cookies)
-            )
+            let (data, response) = try await catalogData(for: authenticatedRequest(components.url!, cookies: cookies))
             guard (response as? HTTPURLResponse)?.statusCode == 200 else {
                 throw BoosteroidClientError.requestFailed(
                     "fetchInstallableCatalog page \(pageNumber)",
@@ -112,7 +140,7 @@ actor BoosteroidClient {
         }
 
         let first = try await fetchPage(1)
-        let pageCount = min(30, max(1, first.meta?.last_page ?? 1))
+        let pageCount = min(16, max(1, first.meta?.last_page ?? 1))
         var games = first.data.map(GameInfo.init)
 
         if pageCount > 1 {
@@ -145,7 +173,8 @@ actor BoosteroidClient {
         // Dynamically discover collections instead of guessing their numeric
         // IDs. A bad/missing collections response leaves the old flow intact.
         if let collections = try? await fetchCatalogCollectionIDs(cookies: cookies) {
-            for id in collections.filter({ $0 != 5 }).prefix(12) {
+            // Discover more categories without starting hundreds of requests.
+            for id in collections.filter({ $0 != 5 }).prefix(2) {
                 if let additional = try? await fetchCatalogPages(collection: id, cookies: cookies) {
                     games.append(contentsOf: additional)
                 }
@@ -173,9 +202,7 @@ actor BoosteroidClient {
                 params.append(URLQueryItem(name: "collection", value: String(collection)))
             }
             url.queryItems = params
-            let (data, response) = try await session.data(
-                for: authenticatedRequest(url.url!, cookies: cookies)
-            )
+            let (data, response) = try await catalogData(for: authenticatedRequest(url.url!, cookies: cookies))
             guard (response as? HTTPURLResponse)?.statusCode == 200 else {
                 throw BoosteroidClientError.requestFailed("fetchCatalogPages",
                     "HTTP \((response as? HTTPURLResponse)?.statusCode ?? 0)")
@@ -183,9 +210,10 @@ actor BoosteroidClient {
             return try JSONDecoder().decode(BoosteroidPaginatedApplications.self, from: data)
         }
         let first = try await load(1)
-        // Defensive bound: prevents infinite requests if an undocumented API
-        // starts emitting nonsense pagination. 40 pages = max 2000 titles.
-        let count = min(40, max(1, first.meta?.last_page ?? 1))
+        // Hard request budget per section: collection 5 is fetched separately;
+        // prefer 8 pages of the unfiltered listing and 2 per extra section.
+        let maxPages = collection == nil ? 8 : 2
+        let count = min(maxPages, max(1, first.meta?.last_page ?? 1))
         var results = first.data.map(GameInfo.init)
         if count > 1 {
             for n in 2...count {
@@ -198,9 +226,7 @@ actor BoosteroidClient {
 
     private func fetchCatalogCollectionIDs(cookies: [String: String]) async throws -> [Int] {
         let url = URL(string: "\(apiBase)/v1/boostore/applications/collections")!
-        let (data, response) = try await session.data(
-            for: authenticatedRequest(url, cookies: cookies)
-        )
+        let (data, response) = try await catalogData(for: authenticatedRequest(url, cookies: cookies))
         guard (response as? HTTPURLResponse)?.statusCode == 200 else {
             throw BoosteroidClientError.requestFailed("fetchCatalogCollections",
                 "HTTP \((response as? HTTPURLResponse)?.statusCode ?? 0)")
