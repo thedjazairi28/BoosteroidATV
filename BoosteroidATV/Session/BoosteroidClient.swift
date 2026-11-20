@@ -127,6 +127,106 @@ actor BoosteroidClient {
         return games.filter { seen.insert($0.id).inserted }
     }
 
+    /// Best-effort unified Boosteroid catalog. The unfiltered applications
+    /// endpoint and the collections discovery endpoint are used by the
+    /// third-party OpenStroid client, but remain undocumented by Boosteroid.
+    /// Failures here MUST NOT break the known-working Installer collection.
+    ///
+    /// A collection can contain duplicates/variants also returned elsewhere.
+    /// We prefer a preinstalled representation when IDs coincide.
+    func fetchBrowsableCatalog(cookies: [String: String]) async throws -> [GameInfo] {
+        var games = try await fetchInstallableCatalog(cookies: cookies)
+
+        // Fetch the default/all view if supported by the account's API.
+        if let allGames = try? await fetchCatalogPages(collection: nil, cookies: cookies) {
+            games.append(contentsOf: allGames)
+        }
+
+        // Dynamically discover collections instead of guessing their numeric
+        // IDs. A bad/missing collections response leaves the old flow intact.
+        if let collections = try? await fetchCatalogCollectionIDs(cookies: cookies) {
+            for id in collections.filter({ $0 != 5 }).prefix(12) {
+                if let additional = try? await fetchCatalogPages(collection: id, cookies: cookies) {
+                    games.append(contentsOf: additional)
+                }
+            }
+        }
+
+        var byID: [String: GameInfo] = [:]
+        for game in games {
+            if let existing = byID[game.id], !existing.requiresInstallation { continue }
+            byID[game.id] = game
+        }
+        return byID.values.sorted {
+            $0.title.localizedStandardCompare($1.title) == .orderedAscending
+        }
+    }
+
+    private func fetchCatalogPages(collection: Int?, cookies: [String: String]) async throws -> [GameInfo] {
+        func load(_ page: Int) async throws -> BoosteroidPaginatedApplications {
+            var url = URLComponents(string: "\(apiBase)/v1/boostore/applications")!
+            var params = [
+                URLQueryItem(name: "page", value: String(page)),
+                URLQueryItem(name: "paginate", value: "50")
+            ]
+            if let collection {
+                params.append(URLQueryItem(name: "collection", value: String(collection)))
+            }
+            url.queryItems = params
+            let (data, response) = try await session.data(
+                for: authenticatedRequest(url.url!, cookies: cookies)
+            )
+            guard (response as? HTTPURLResponse)?.statusCode == 200 else {
+                throw BoosteroidClientError.requestFailed("fetchCatalogPages",
+                    "HTTP \((response as? HTTPURLResponse)?.statusCode ?? 0)")
+            }
+            return try JSONDecoder().decode(BoosteroidPaginatedApplications.self, from: data)
+        }
+        let first = try await load(1)
+        // Defensive bound: prevents infinite requests if an undocumented API
+        // starts emitting nonsense pagination. 40 pages = max 2000 titles.
+        let count = min(40, max(1, first.meta?.last_page ?? 1))
+        var results = first.data.map(GameInfo.init)
+        if count > 1 {
+            for n in 2...count {
+                let next = try await load(n)
+                results.append(contentsOf: next.data.map(GameInfo.init))
+            }
+        }
+        return results
+    }
+
+    private func fetchCatalogCollectionIDs(cookies: [String: String]) async throws -> [Int] {
+        let url = URL(string: "\(apiBase)/v1/boostore/applications/collections")!
+        let (data, response) = try await session.data(
+            for: authenticatedRequest(url, cookies: cookies)
+        )
+        guard (response as? HTTPURLResponse)?.statusCode == 200 else {
+            throw BoosteroidClientError.requestFailed("fetchCatalogCollections",
+                "HTTP \((response as? HTTPURLResponse)?.statusCode ?? 0)")
+        }
+        // Collection envelopes have no official Codable contract. Only parse
+        // numeric IDs from an array or a {"data":[...]} envelope. Never
+        // interpret numeric genre/store metadata as collection IDs.
+        let json = try JSONSerialization.jsonObject(with: data)
+        let entries: [[String: Any]]
+        if let direct = json as? [[String: Any]] {
+            entries = direct
+        } else if let dict = json as? [String: Any],
+                  let data = dict["data"] as? [[String: Any]] {
+            entries = data
+        } else {
+            return []
+        }
+        var seen = Set<Int>()
+        return entries.compactMap { item -> Int? in
+            let id = (item["id"] as? Int)
+                ?? (item["id"] as? String).flatMap(Int.init)
+            guard let id, (1...1000).contains(id), seen.insert(id).inserted else { return nil }
+            return id
+        }
+    }
+
     func fetchLibrary(cookies: [String: String]) async throws -> [GameInfo] {
         func fetchPage(_ pageNumber: Int) async throws -> BoosteroidPaginatedApplications {
             let url = URL(string: "\(apiBase)/v1/boostore/applications/installed?page=\(pageNumber)&paginate=50")!
