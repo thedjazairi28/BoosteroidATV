@@ -5,6 +5,7 @@ on:
     branches:
       - feature/unified-catalog-v1
       - feature/v2-smart-experience
+      - feature/v2.1-stability
   workflow_dispatch:
 
 permissions:
@@ -25,12 +26,12 @@ jobs:
       - name: Build unsigned IPA
         run: |
           chmod +x scripts/build-ipa.sh
-          VERSION=2026.11.21.1 ./scripts/build-ipa.sh
+          VERSION=2026.11.21.2 ./scripts/build-ipa.sh
 
       - name: Upload unsigned IPA for atvloadly
         uses: actions/upload-artifact@v4
         with:
-          name: BoosteroidATV-v2-unsigned
+          name: BoosteroidATV-v2-1-stability-unsigned
           path: build/*.ipa
           if-no-files-found: error
           retention-days: 7
