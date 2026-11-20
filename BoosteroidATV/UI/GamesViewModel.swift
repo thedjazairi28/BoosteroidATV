@@ -4,6 +4,10 @@ import Observation
 @Observable
 class GamesViewModel {
     var library: [GameInfo] = []
+    var catalog: [GameInfo] = []
+    var isCatalogLoading = false
+    var catalogError: String?
+    private var hasLoadedCatalog = false
     var activeSessions: [ActiveSessionInfo] = []
     var isLoading = false
     var error: String?
@@ -50,6 +54,7 @@ class GamesViewModel {
         do {
             let cookies = try await authManager.resolveCookies()
             library = try await client.fetchLibrary(cookies: cookies)
+            reconcileCatalogWithLibrary()
             activeSessions = (try? await client.getActiveSessions(cookies: cookies)) ?? []
             // Best-effort: Settings still works (just shows defaults) if
             // either of these fails, so neither is allowed to fail `load()`
@@ -77,10 +82,45 @@ class GamesViewModel {
         do {
             let cookies = try await authManager.resolveCookies()
             library = try await client.fetchLibrary(cookies: cookies)
+            reconcileCatalogWithLibrary()
             activeSessions = (try? await client.getActiveSessions(cookies: cookies)) ?? activeSessions
         } catch {
             self.error = error.localizedDescription
         }
+    }
+
+    /// Loads the complete observed "Installer" collection and merges it with
+    /// the signed-in user's library. This is a unified first step, NOT a claim
+    /// that every Boosteroid collection is already represented.
+    func loadCatalog(authManager: AuthManager, force: Bool = false) async {
+        guard !isCatalogLoading, (force || !hasLoadedCatalog) else { return }
+        isCatalogLoading = true
+        catalogError = nil
+        defer { isCatalogLoading = false }
+
+        do {
+            let cookies = try await authManager.resolveCookies()
+            catalog = try await client.fetchInstallableCatalog(cookies: cookies)
+            reconcileCatalogWithLibrary()
+            hasLoadedCatalog = true
+        } catch {
+            catalogError = error.localizedDescription
+        }
+    }
+
+    /// The API field `installed` means server-side installation status, not
+    /// "owned by the user". Membership is determined from the actual library.
+    private func reconcileCatalogWithLibrary() {
+        let libraryIDs = Set(library.map(\.id))
+        for index in catalog.indices {
+            catalog[index].isInLibrary = libraryIDs.contains(catalog[index].id)
+        }
+
+        var knownIDs = Set(catalog.map(\.id))
+        for game in library where knownIDs.insert(game.id).inserted {
+            catalog.append(game)
+        }
+        catalog.sort { $0.title.localizedStandardCompare($1.title) == .orderedAscending }
     }
 
     /// Writes "Permitir ligação a regiões distantes" — optimistic update,
