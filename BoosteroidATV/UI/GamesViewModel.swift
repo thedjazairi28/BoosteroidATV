@@ -129,7 +129,7 @@ class GamesViewModel {
             if error.localizedDescription.contains("429") {
                 catalogError = "Boosteroid limite temporairement les recherches (HTTP 429). Les jeux déjà chargés restent disponibles. Réessaie plus tard."
             } else {
-                catalogError = "Mise à jour du catalogue indisponible : \\(error.localizedDescription)"
+                catalogError = "Mise à jour du catalogue indisponible : \(error.localizedDescription)"
             }
         }
     }
@@ -162,7 +162,7 @@ class GamesViewModel {
             try await client.setAllowDistantRegions(allow, cookies: cookies)
         } catch {
             allowDistantRegions = previous
-            regionSettingsError = "Couldn't update: \(error.localizedDescription)"
+            regionSettingsError = "Mise à jour impossible : \(error.localizedDescription)"
         }
     }
 
@@ -177,7 +177,7 @@ class GamesViewModel {
             try await client.setPreferredPlayground(id, cookies: cookies)
         } catch {
             preferredPlaygroundId = previous
-            regionSettingsError = "Couldn't update: \(error.localizedDescription)"
+            regionSettingsError = "Mise à jour impossible : \(error.localizedDescription)"
         }
     }
 
