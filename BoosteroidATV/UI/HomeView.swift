@@ -173,14 +173,21 @@ struct GameOverviewView: View {
                             .shadow(radius: 6)
                             .lineLimit(2)
 
-                        Label("In Library", systemImage: "checkmark.circle.fill")
-                            .font(.title3.weight(.semibold))
-                            .foregroundStyle(BoosteroidTheme.accent)
+                        Label(
+                            game.isInLibrary ? "Dans ma bibliothèque"
+                                : (game.requiresInstallation ? "Installation nécessaire" : "Prêt à jouer"),
+                            systemImage: game.requiresInstallation ? "square.and.arrow.down" : "checkmark.circle.fill"
+                        )
+                        .font(.title3.weight(.semibold))
+                        .foregroundStyle(game.requiresInstallation ? .orange : BoosteroidTheme.accent)
 
                         HStack(spacing: 16) {
                             Button(action: onPlay) {
-                                Label("Play", systemImage: "play.fill")
-                                    .frame(minWidth: 120)
+                                Label(
+                                    game.requiresInstallation ? "Installer et jouer" : "Jouer",
+                                    systemImage: game.requiresInstallation ? "square.and.arrow.down" : "play.fill"
+                                )
+                                .frame(minWidth: 120)
                             }
                             .buttonStyle(.borderedProminent)
                             .tint(BoosteroidTheme.violet)
