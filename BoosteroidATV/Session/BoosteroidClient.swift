@@ -128,13 +128,30 @@ actor BoosteroidClient {
     }
 
     func fetchLibrary(cookies: [String: String]) async throws -> [GameInfo] {
-        let url = URL(string: "\(apiBase)/v1/boostore/applications/installed?page=1&paginate=50")!
-        let (data, response) = try await session.data(for: authenticatedRequest(url, cookies: cookies))
-        guard (response as? HTTPURLResponse)?.statusCode == 200 else {
-            throw BoosteroidClientError.requestFailed("fetchLibrary", String(data: data, encoding: .utf8) ?? "")
+        func fetchPage(_ pageNumber: Int) async throws -> BoosteroidPaginatedApplications {
+            let url = URL(string: "\(apiBase)/v1/boostore/applications/installed?page=\(pageNumber)&paginate=50")!
+            let (data, response) = try await session.data(for: authenticatedRequest(url, cookies: cookies))
+            guard (response as? HTTPURLResponse)?.statusCode == 200 else {
+                throw BoosteroidClientError.requestFailed("fetchLibrary page \(pageNumber)",
+                    "HTTP \((response as? HTTPURLResponse)?.statusCode ?? 0)")
+            }
+            return try JSONDecoder().decode(BoosteroidPaginatedApplications.self, from: data)
         }
-        let page = try JSONDecoder().decode(BoosteroidPaginatedApplications.self, from: data)
-        let basicGames = page.data.map(GameInfo.init)
+
+        let firstPage = try await fetchPage(1)
+        let pageCount = min(30, max(1, firstPage.meta?.last_page ?? 1))
+        var basicGames = firstPage.data.map(GameInfo.init)
+        if pageCount > 1 {
+            for pageNumber in 2...pageCount {
+                let nextPage = try await fetchPage(pageNumber)
+                basicGames.append(contentsOf: nextPage.data.map(GameInfo.init))
+            }
+        }
+
+        // A page boundary or API change should never create duplicate library
+        // tiles. Enrichment below uses the deduplicated list.
+        var uniqueIDs = Set<String>()
+        basicGames = basicGames.filter { uniqueIDs.insert($0.id).inserted }
 
         // The installed list is optimized for browsing and can omit longer
         // description/rating fields. Enrich each entry from Boosteroid's
