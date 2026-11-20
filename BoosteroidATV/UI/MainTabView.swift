@@ -10,7 +10,7 @@ struct MainTabView: View {
     @State private var selectedTab: AppTab = .home
 
     private enum AppTab: Hashable {
-        case home, library, settings, help
+        case home, catalog, library, settings, help
     }
 
     var body: some View {
@@ -25,6 +25,17 @@ struct MainTabView: View {
                     onShowDetails: { selectedGame = $0 },
                     onRefresh: { await viewModel.refreshLibrary(authManager: authManager) }
                 )
+            }
+
+            Tab("Catalogue", systemImage: "square.grid.2x2.fill", value: AppTab.catalog) {
+                CatalogView(
+                    games: viewModel.catalog,
+                    isLoading: viewModel.isCatalogLoading,
+                    error: viewModel.catalogError,
+                    onSelect: { selectedGame = $0 },
+                    onRefresh: { await viewModel.loadCatalog(authManager: authManager, force: true) }
+                )
+                .task { await viewModel.loadCatalog(authManager: authManager) }
             }
 
             Tab("Library", systemImage: "books.vertical.fill", value: AppTab.library) {
@@ -83,7 +94,7 @@ struct MainTabView: View {
     }
 
     private func moveTab(by offset: Int) {
-        let tabs: [AppTab] = [.home, .library, .settings, .help]
+        let tabs: [AppTab] = [.home, .catalog, .library, .settings, .help]
         guard let current = tabs.firstIndex(of: selectedTab) else { return }
         let destination = current + offset
         guard tabs.indices.contains(destination) else { return }
