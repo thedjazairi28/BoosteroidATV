@@ -86,6 +86,7 @@ struct StreamView: View {
     @State private var localCursor: CGPoint = .zero
     @State private var showKeyboard = false
     @State private var showTextEntry = false
+    @State private var showAccountAutofill = false
     /// The "Performance Overlay" pill's own Enable/Disable flyout.
     @State private var showPerformanceFlyout = false
     /// nil = follow the session's saved Settings value; set once the user
@@ -168,7 +169,7 @@ struct StreamView: View {
                     streamController: controller,
                     // Focus must reach SwiftUI whenever an overlay is up, or the
                     // on-screen keyboard's keys can't be selected.
-                    showOverlay: showOverlay || showKeyboard || showTextEntry,
+                    showOverlay: showOverlay || showKeyboard || showTextEntry || showAccountAutofill,
                     // Play/Pause (Siri Remote) opens/closes the bar: closes
                     // the keyboard or Performance Overlay flyout first if
                     // either is up, otherwise toggles the bar itself both
@@ -198,7 +199,17 @@ struct StreamView: View {
                 if pointerMode {
                     pointerCursor
                 }
-                if showTextEntry {
+                if showAccountAutofill {
+                    VStack {
+                        Spacer()
+                        GameAutofillView(
+                            inputSender: controller.inputSender,
+                            suggestedProvider: GameAccountProvider.suggested(for: game),
+                            onClose: { showAccountAutofill = false }
+                        )
+                        .padding(.bottom, 48)
+                    }
+                } else if showTextEntry {
                     VStack {
                         Spacer()
                         RemoteTextEntryView(
@@ -353,7 +364,9 @@ struct StreamView: View {
     /// the raw-input and focus-system paths, and the gamepad combo) so they
     /// can't drift apart.
     private func togglePauseBar() {
-        if showTextEntry {
+        if showAccountAutofill {
+            showAccountAutofill = false
+        } else if showTextEntry {
             showTextEntry = false
         } else if showKeyboard {
             showKeyboard = false
@@ -536,6 +549,10 @@ struct StreamView: View {
                     topBarPill("Saisie iPhone", systemImage: "iphone") {
                         showOverlay = false
                         showTextEntry = true
+                    }
+                    topBarPill("Mes comptes", systemImage: "key.fill") {
+                        showOverlay = false
+                        showAccountAutofill = true
                     }
                     topBarPill("Pointer", systemImage: pointerMode ? "cursorarrow.click.2" : "cursorarrow",
                                active: pointerMode) {
