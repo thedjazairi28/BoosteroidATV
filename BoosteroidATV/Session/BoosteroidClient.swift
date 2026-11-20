@@ -253,23 +253,12 @@ actor BoosteroidClient {
         var uniqueIDs = Set<String>()
         basicGames = basicGames.filter { uniqueIDs.insert($0.id).inserted }
 
-        // The installed list is optimized for browsing and can omit longer
-        // description/rating fields. Enrich each entry from Boosteroid's
-        // application-detail endpoint, but keep the basic record if a detail
-        // request is unavailable so one game can never break the Library.
-        return await withTaskGroup(of: (Int, GameInfo).self) { group in
-            var result = basicGames
-            for (index, game) in basicGames.enumerated() {
-                group.addTask {
-                    guard let detail = try? await self.fetchApplication(id: game.id, cookies: cookies) else {
-                        return (index, game)
-                    }
-                    return (index, game.enriched(with: detail))
-                }
-            }
-            for await (index, game) in group { result[index] = game }
-            return result
-        }
+        // IMPORTANT: never enrich every game at launch. The previous
+        // implementation sent 50-300+ detail requests concurrently, exhausting
+        // Boosteroid's shared API limit before the catalog could load (HTTP 429).
+        // The paginated library response already has enough data for game cards.
+        // A detail request should be made only on demand in a future feature.
+        return basicGames
     }
 
     func fetchApplication(id: String, cookies: [String: String]) async throws -> GameInfo {
