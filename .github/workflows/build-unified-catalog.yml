@@ -14,6 +14,7 @@ on:
       - feature/v2.4-gamepad-pointer
       - feature/v2.4.2-safe-launch
       - feature/v2.4.3-live-logs
+      - feature/v2.4.4-github-reports
   workflow_dispatch:
 
 permissions:
@@ -34,12 +35,12 @@ jobs:
       - name: Build unsigned IPA
         run: |
           chmod +x scripts/build-ipa.sh
-          VERSION=2026.11.22.10 ./scripts/build-ipa.sh
+          VERSION=2026.11.22.11 ./scripts/build-ipa.sh
 
       - name: Upload unsigned IPA for atvloadly
         uses: actions/upload-artifact@v4
         with:
-          name: BoosteroidATV-v2-4-3-live-logs-unsigned
+          name: BoosteroidATV-v2-4-4-github-reports-unsigned
           path: build/*.ipa
           if-no-files-found: error
           retention-days: 7
