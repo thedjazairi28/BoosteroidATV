@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import NaturalLanguage
 
 @Observable
 class GamesViewModel {
@@ -39,6 +40,35 @@ class GamesViewModel {
     var regionSettingsError: String?
 
     private let client = BoosteroidClient()
+
+    // Optional, public Steam Store data: no Steam login and no Boosteroid cookies.
+    private let publicMediaService = SteamPublicMediaService()
+    private(set) var publicMediaByGameID: [String: SteamPublicMedia] = [:]
+    private var requestedMediaGameIDs: Set<String> = []
+    private(set) var loadingMediaGameIDs: Set<String> = []
+
+    func loadPublicMedia(for game: GameInfo) async {
+        guard requestedMediaGameIDs.insert(game.id).inserted else { return }
+        loadingMediaGameIDs.insert(game.id)
+        defer { loadingMediaGameIDs.remove(game.id) }
+        let result = await publicMediaService.find(gameTitle: game.title)
+        publicMediaByGameID[game.id] = result ?? SteamPublicMedia(descriptionFR: nil, videos: [])
+    }
+
+    func videoPreviews(for game: GameInfo) -> [GameTrailerPreview] {
+        publicMediaByGameID[game.id]?.videos ?? []
+    }
+
+    func frenchDescription(for game: GameInfo) -> String {
+        if let text = publicMediaByGameID[game.id]?.descriptionFR, !text.isEmpty { return text }
+        let boosteroidText = game.summary?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        if boosteroidText.count > 80, NLLanguageRecognizer.dominantLanguage(for: boosteroidText) == .french {
+            return boosteroidText
+        }
+        if loadingMediaGameIDs.contains(game.id) { return "Recherche d'une description en français…" }
+        return "Description en français indisponible pour ce jeu."
+    }
+
 
     // One optional detail request per selected game. Never scan every game at launch.
     private(set) var detailByID: [String: GameInfo] = [:]
@@ -245,5 +275,127 @@ class GamesViewModel {
     func markPlayed(_ game: GameInfo) {
         lastPlayedGameID = game.id
         UserDefaults.standard.set(game.id, forKey: "boosteroid.lastPlayedGameID")
+    }
+}
+
+
+// MARK: - Public video previews and French storefront text
+// Experimental Steam Store endpoints; request only when a game is selected.
+
+struct GameTrailerPreview: Identifiable, Hashable {
+    let id: Int
+    let title: String
+    let thumbnail: URL?
+    let videoURL: URL
+}
+
+struct SteamPublicMedia {
+    let descriptionFR: String?
+    let videos: [GameTrailerPreview]
+}
+
+private actor SteamPublicMediaService {
+    private let session: URLSession = {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.timeoutIntervalForRequest = 8
+        configuration.timeoutIntervalForResource = 15
+        return URLSession(configuration: configuration)
+    }()
+
+    func find(gameTitle: String) async -> SteamPublicMedia? {
+        let cleanTitle = gameTitle
+            .replacingOccurrences(of: #"\\s*\\((steam|xbox|epic|rockstar|ubisoft|ea app|gog)\\)\\s*$"#,
+                                  with: "", options: [.regularExpression, .caseInsensitive])
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !cleanTitle.isEmpty else { return nil }
+
+        // Search first; Boosteroid's own numeric app ID is NOT the Steam app ID.
+        var search = URLComponents(string: "https://store.steampowered.com/api/storesearch/")!
+        search.queryItems = [
+            URLQueryItem(name: "term", value: cleanTitle),
+            URLQueryItem(name: "l", value: "french"),
+            URLQueryItem(name: "cc", value: "fr")
+        ]
+        guard let searchURL = search.url,
+              let searchJSON = await json(from: searchURL) as? [String: Any],
+              let results = searchJSON["items"] as? [[String: Any]]
+        else { return nil }
+
+        let key = normalized(cleanTitle)
+        guard let match = results.first(where: { item in
+            guard let name = item["name"] as? String else { return false }
+            return normalized(name) == key
+        }), let appID = match["id"] as? Int else { return nil }
+
+        var detail = URLComponents(string: "https://store.steampowered.com/api/appdetails")!
+        detail.queryItems = [
+            URLQueryItem(name: "appids", value: String(appID)),
+            URLQueryItem(name: "l", value: "french"),
+            URLQueryItem(name: "cc", value: "fr")
+        ]
+        guard let detailURL = detail.url,
+              let root = await json(from: detailURL) as? [String: Any],
+              let envelope = root[String(appID)] as? [String: Any],
+              let data = envelope["data"] as? [String: Any]
+        else { return nil }
+
+        let rawText = data["short_description"] as? String ?? ""
+        let candidate = rawText
+            .replacingOccurrences(of: "<[^>]*>", with: " ", options: .regularExpression)
+            .replacingOccurrences(of: "&amp;", with: "&")
+            .replacingOccurrences(of: "&quot;", with: "\"")
+            .replacingOccurrences(of: "&#39;", with: "'")
+            .replacingOccurrences(of: "&nbsp;", with: " ")
+            .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        // Steam may fall back to English even when l=french was requested.
+        let french = candidate.count >= 55 && NLLanguageRecognizer.dominantLanguage(for: candidate) == .french
+            ? candidate : nil
+
+        var previews: [GameTrailerPreview] = []
+        if let movies = data["movies"] as? [[String: Any]] {
+            for movie in movies {
+                guard let name = movie["name"] as? String,
+                      let videos = movie["mp4"] as? [String: Any],
+                      let rawVideo = (videos["max"] as? String ?? videos["480"] as? String),
+                      let videoURL = httpsVideoURL(rawVideo)
+                else { continue }
+                let thumbnail = (movie["thumbnail"] as? String).flatMap(httpsVideoURL)
+                let id = movie["id"] as? Int ?? previews.count
+                previews.append(GameTrailerPreview(id: id, title: name, thumbnail: thumbnail, videoURL: videoURL))
+                if previews.count == 3 { break }
+            }
+        }
+        return SteamPublicMedia(descriptionFR: french, videos: previews)
+    }
+
+    private func json(from url: URL) async -> Any? {
+        do {
+            var request = URLRequest(url: url)
+            request.setValue("application/json", forHTTPHeaderField: "Accept")
+            let (data, response) = try await session.data(for: request)
+            guard (response as? HTTPURLResponse)?.statusCode == 200, data.count < 2_000_000 else { return nil }
+            return try JSONSerialization.jsonObject(with: data)
+        } catch {
+            return nil
+        }
+    }
+
+    private func normalized(_ value: String) -> String {
+        value
+            .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: Locale(identifier: "en_US_POSIX"))
+            .lowercased()
+            .replacingOccurrences(of: "[^a-z0-9]+", with: " ", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private func httpsVideoURL(_ text: String) -> URL? {
+        guard var components = URLComponents(string: text) else { return nil }
+        if components.scheme == "http" { components.scheme = "https" }
+        guard components.scheme == "https", let host = components.host?.lowercased(),
+              host == "steamstatic.com" || host.hasSuffix(".steamstatic.com")
+                  || host == "akamaihd.net" || host.hasSuffix(".akamaihd.net")
+        else { return nil }
+        return components.url
     }
 }
