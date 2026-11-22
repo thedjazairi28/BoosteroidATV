@@ -14,6 +14,7 @@
 | Base d'origine | `main` | `623c42b` | Version amont disponible | **Testée** : installation et streaming sur Apple TV |
 | V1 — Catalogue unifié | `feature/unified-catalog-v1` | `a788071` | **Réussie** le 20/11/2026 | **Non confirmé** |
 | V2 — Smart Experience | `feature/v2-smart-experience` | `fd60053` | **Réussie** le 20/11/2026 | **Non confirmé** |
+| V2.4.3 — Journal de lancement en direct (expérimental) | `feature/v2.4.3-live-logs` | `f0935be` | **En cours** — [#45032820450](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45032820450) | **Non testé sur Apple TV** |
 | V2.4.2 — Démarrage sécurisé (expérimental) | `feature/v2.4.2-safe-launch` | `baa8aa4` | **Réussie** — [#45032408808](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45032408808) | **Non testé sur Apple TV** |
 | V2.4.1 — Stabilité du lancement (expérimental) | `feature/v2.4.1-launch-stability` | `3f16bd9` | **Réussie** — [#45030927237](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45030927237) | ❌ **KO : fermeture de l'application au lancement de tout jeu signalée** (22/11/2026) |
 | V2.4 — Souris virtuelle avec manette (expérimental) | `feature/v2.4-gamepad-pointer` | `fd7d78a` | **Réussie** — [#45026265985](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45026265985) | **Non testé sur Apple TV** |
@@ -25,6 +26,33 @@
 | V2.1 — Stability | `feature/v2.1-stability` | `17df76b` | **Réussie** le 20/11/2026 | **3 OK, 3 KO** — 22/11/2026 (ligne rouge disparue, origine inconnue) |
 
 **Important :** V2 inclut V1, V2.1 inclut V1 + V2, V2.2 part de V2.1 et V2.3 part de V2.2. La branche `main` conserve le code de base : **aucune des branches expérimentales n'est fusionnée dans `main`** à la date de ce journal.
+
+## 22 novembre 2026 — V2.4.3 « Journal de lancement en direct » (diagnostic expérimental)
+
+**Demande utilisateur :** lors d'un retour brutal au menu de l'Apple TV au lancement de n'importe quel jeu, afficher des **logs à l'écran** pour identifier le dernier jalon de démarrage atteint avant l'arrêt de l'application.
+
+**Branche :** [feature/v2.4.3-live-logs](https://github.com/thedjazairi28/BoosteroidATV/tree/feature/v2.4.3-live-logs)  
+**Comparaison :** [V2.4.2 → V2.4.3](https://github.com/thedjazairi28/BoosteroidATV/compare/feature/v2.4.2-safe-launch...feature/v2.4.3-live-logs)  
+**Build :** [GitHub Actions #45032820450](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45032820450) — **en cours à la rédaction**.  
+**Tests sur Apple TV :** non réalisés.
+
+### Fonctionnalité
+
+- Affichage, **activé par défaut**, d'une boîte de diagnostic transparente aux interactions, pendant le chargement, l'attente d'une machine, la connexion, le jeu et les écrans d'erreur.
+- Journal horodaté à la seconde indiquant uniquement des événements **whitelistés** dans le code : lancement demandé, vérification de l'authentification, demande de session, attribution, ouverture du canal de commandes, négociation WebRTC, état ICE, démarrage des images, erreurs interceptées, fermeture normale.
+- Conservation des **80 derniers événements** dans les préférences locales de l'application, pour pouvoir les retrouver après un arrêt brutal : **Réglages → Diagnostics → Journal des événements**.
+- Interrupteur **« Journal de lancement à l'écran »** pour masquer/afficher l'overlay ; bouton **« Effacer »** dans la page Diagnostics.
+- **Confidentialité :** le journal ne copie aucun mot de passe, courriel, cookie, jeton, URL d'API, ID de session ou réponse HTTP brute. Il n'enregistre que des libellés techniques rédigés et le titre du jeu sélectionné (tronqué).
+- Le mode « Aperçus vidéo animés » reste désactivé par défaut, comme sur la V2.4.2.
+
+### Validation et limites
+
+- [ ] Vérifier que le journal est visible dès l'écran de démarrage d'un jeu, sans bloquer les commandes.
+- [ ] En cas de fermeture brutale : **relancer l'application puis ouvrir Réglages → Diagnostics**, photographier les dernières lignes et l'étape de lancement.
+- [ ] Vérifier qu'aucun secret de compte n'est présent dans les événements.
+- [ ] Comparer un jeu de la Bibliothèque et un jeu « Installer et jouer » du Catalogue.
+- **Ce journal applicatif ne peut pas intercepter un crash natif, un signal fatal ou un JetsamEvent** ; la dernière entrée écrite avant la disparition peut être incomplète. Un rapport de crash tvOS reste nécessaire pour prouver la cause racine.
+- La compilation ne vaut pas validation fonctionnelle sur l'Apple TV.
 
 ## 22 novembre 2026 — V2.4.2 « Démarrage sécurisé » (correctif expérimental)
 
