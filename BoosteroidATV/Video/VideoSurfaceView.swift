@@ -23,7 +23,16 @@ final class VideoSurfaceView: UIView {
     private var currentTrack: LKRTCVideoTrack?
 
     /// Set by StreamController once the input channel is ready.
-    weak var inputHandler: InputEventHandler?
+    weak var inputHandler: InputEventHandler? {
+        didSet {
+            guard let sender = inputHandler as? InputSender else { return }
+            sender.gamepadPointerMovementHandler = { [weak self] dx, dy in
+                self?.movePointerFromGamepad(dx: dx, dy: dy)
+            }
+            sender.setGamepadPointerMode(pointerModeActive)
+            sender.gamepadPointerInteractionPaused = overlayVisible
+        }
+    }
 
     /// Called when the user presses the Menu button on the Siri Remote.
     var menuPressHandler: (() -> Void)?
@@ -41,6 +50,7 @@ final class VideoSurfaceView: UIView {
             guard pointerModeActive != oldValue else { return }
             pointerPanRecognizer?.isEnabled = pointerModeActive
             pointerTapRecognizer?.isEnabled = pointerModeActive
+            (inputHandler as? InputSender)?.setGamepadPointerMode(pointerModeActive)
             if pointerModeActive {
                 calibratePointer()
             } else {
@@ -67,7 +77,11 @@ final class VideoSurfaceView: UIView {
     private var lastPanTranslation: CGPoint = .zero
 
     /// Tracks whether the pause overlay is currently visible.
-    var overlayVisible: Bool = false
+    var overlayVisible: Bool = false {
+        didSet {
+            (inputHandler as? InputSender)?.gamepadPointerInteractionPaused = overlayVisible
+        }
+    }
 
     var videoTrack: LKRTCVideoTrack? {
         didSet {
@@ -161,6 +175,22 @@ final class VideoSurfaceView: UIView {
     /// tap is even reaching us. Without this, "clicking does nothing" can't be
     /// told apart from the gesture never firing.
     var pointerClickedHandler: (() -> Void)?
+
+    /// Controller stick and Siri Remote share one absolute mouse cursor.
+    private func movePointerFromGamepad(dx: CGFloat, dy: CGFloat) {
+        guard pointerModeActive, !overlayVisible else { return }
+        let width = max(1, streamSurfaceSize.width)
+        let height = max(1, streamSurfaceSize.height)
+        var position = absolutePointer ?? CGPoint(x: width / 2, y: height / 2)
+        let previousX = Int(position.x)
+        let previousY = Int(position.y)
+        position.x = min(max(position.x + dx, 0), width)
+        position.y = min(max(position.y + dy, 0), height)
+        absolutePointer = position
+        guard Int(position.x) != previousX || Int(position.y) != previousY else { return }
+        inputHandler?.sendMouseAbsolute(x: Int(position.x), y: Int(position.y))
+        pointerPositionHandler?(position)
+    }
 
     @objc private func handlePointerPan(_ gesture: UIPanGestureRecognizer) {
         switch gesture.state {
