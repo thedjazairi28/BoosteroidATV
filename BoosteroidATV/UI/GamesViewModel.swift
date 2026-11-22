@@ -40,6 +40,29 @@ class GamesViewModel {
 
     private let client = BoosteroidClient()
 
+    // One optional detail request per selected game. Never scan every game at launch.
+    private(set) var detailByID: [String: GameInfo] = [:]
+    private var requestedDetailIDs: Set<String> = []
+
+    func enrichedGame(_ game: GameInfo) -> GameInfo {
+        guard let detail = detailByID[game.id] else { return game }
+        return game.enriched(with: detail)
+    }
+
+    func loadGameDetails(_ game: GameInfo, authManager: AuthManager) async {
+        // A missing or unconfirmed endpoint must never prevent opening a card.
+        guard Int(game.id) != nil, requestedDetailIDs.insert(game.id).inserted else { return }
+        do {
+            let cookies = try await authManager.resolveCookies()
+            let detail = try await client.fetchApplication(id: game.id, cookies: cookies)
+            detailByID[game.id] = detail
+        } catch {
+            // Keep the list metadata and avoid repeated failed requests.
+            // This is an optional, best-effort enrichment.
+        }
+    }
+
+
     init() {
         if let data = UserDefaults.standard.data(forKey: "boosteroid.streamSettings"),
            let settings = try? JSONDecoder().decode(StreamSettings.self, from: data) {
