@@ -606,6 +606,8 @@ private struct LibraryCarouselView: View {
     @State private var currentIndex: Int
     @State private var navigationDirection = 1
     @State private var videoPlaybackError: String?
+    @State private var previewEnabled = true
+    @State private var launchRequested = false
     @FocusState private var actionFocus: ActionFocus?
 
     init(request: LibraryCarouselRequest, onPlay: @escaping (GameInfo) -> Void, onDismiss: @escaping () -> Void) {
@@ -616,6 +618,16 @@ private struct LibraryCarouselView: View {
     }
 
     private var game: GameInfo { viewModel.enrichedGame(request.games[currentIndex]) }
+
+    private func prepareToLaunch(_ selected: GameInfo) {
+        guard !launchRequested else { return }
+        launchRequested = true
+        previewEnabled = false
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(180))
+            onPlay(selected)
+        }
+    }
 
     var body: some View {
         GeometryReader { geo in
@@ -678,6 +690,7 @@ private struct LibraryCarouselView: View {
             }
         }
         .onExitCommand(perform: onDismiss)
+        .onDisappear { previewEnabled = false }
         .defaultFocus($actionFocus, .play)
         .onChange(of: currentIndex) { _, _ in videoPlaybackError = nil }
         .task(id: request.games[currentIndex].id) {
@@ -726,7 +739,7 @@ private struct LibraryCarouselView: View {
         ZStack {
             ZStack {
                 carouselArtwork(game)
-                if let videoURL = viewModel.backgroundVideo(for: game) {
+                if previewEnabled, let videoURL = viewModel.backgroundVideo(for: game) {
                     SilentGameVideoBackground(url: videoURL, onError: { videoPlaybackError = $0 })
                         .allowsHitTesting(false)
                 }
@@ -807,7 +820,7 @@ private struct LibraryCarouselView: View {
                     Spacer(minLength: 6)
 
                     HStack(spacing: 18) {
-                        Button { onPlay(game) } label: {
+                        Button { prepareToLaunch(game) } label: {
                             Label("Jouer", systemImage: "play.fill")
                                 .font(.system(size: 22, weight: .medium))
                                 .frame(minWidth: 100)
@@ -815,6 +828,7 @@ private struct LibraryCarouselView: View {
                         .buttonStyle(.borderedProminent)
                         .tint(BoosteroidTheme.violet)
                         .focused($actionFocus, equals: .play)
+                        .disabled(launchRequested)
 
                         Button { viewModel.toggleFavorite(game) } label: {
                             Label(
