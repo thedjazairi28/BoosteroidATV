@@ -176,28 +176,42 @@ struct SettingsView: View {
                     SecureField("Jeton GitHub (Issues : Read and write)", text: $newIssueToken)
                     HStack(spacing: 14) {
                         Button(issueTokenStored ? "Remplacer le jeton" : "Enregistrer le jeton") {
-                            issueTokenStored = DiagnosticIssueCredentials.save(newIssueToken)
+                            let saved = DiagnosticIssueCredentials.save(newIssueToken)
+                            // Never keep the user-entered secret in view state after saving.
                             newIssueToken = ""
-                            issueReportStatus = issueTokenStored
-                                ? "Jeton enregistré dans le trousseau de l'Apple TV."
-                                : "Impossible de conserver le jeton dans le trousseau."
+                            // Confirm the actual Keychain read, not just SecItemAdd/Update.
+                            issueTokenStored = DiagnosticIssueCredentials.load() != nil
+                            issueReportStatus = saved && issueTokenStored
+                                ? "Jeton enregistré et relu depuis le Keychain de l'Apple TV."
+                                : (issueTokenStored
+                                    ? "Remplacement impossible : le jeton précédent est conservé."
+                                    : "Échec du stockage local : réessaie sans désinstaller l'application.")
                         }
                         .disabled(newIssueToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                        .buttonStyle(.bordered)
+                        Button("Vérifier le Keychain") {
+                            issueTokenStored = DiagnosticIssueCredentials.load() != nil
+                            issueReportStatus = issueTokenStored
+                                ? "Jeton présent : il sera réutilisé par cette installation."
+                                : "Aucun jeton retrouvé dans le Keychain de cette installation."
+                        }
                         .buttonStyle(.bordered)
                         if issueTokenStored {
                             Button("Supprimer le jeton") {
                                 DiagnosticIssueCredentials.delete()
-                                issueTokenStored = false
+                                issueTokenStored = DiagnosticIssueCredentials.load() != nil
                                 newIssueToken = ""
-                                issueReportStatus = "Jeton supprimé de l'Apple TV."
+                                issueReportStatus = issueTokenStored
+                                    ? "Impossible de supprimer le jeton."
+                                    : "Jeton supprimé du Keychain de l'Apple TV."
                             }
                             .buttonStyle(.bordered)
                             .tint(.red)
                         }
                     }
                     Text(issueTokenStored
-                         ? "Jeton configuré sur cette Apple TV (jamais affiché ni inclus dans le rapport)."
-                         : "Configure un jeton GitHub à accès limité, autorisé à créer des Issues uniquement dans le dépôt choisi.")
+                         ? "Jeton enregistré localement. Il n'est ni affiché ni inclus dans le rapport. Le premier envoi vérifiera aussi les droits GitHub."
+                         : "Entre un jeton GitHub à accès limité, puis sélectionne Enregistrer le jeton. Le secret ne figure jamais dans l'IPA.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     Button {
