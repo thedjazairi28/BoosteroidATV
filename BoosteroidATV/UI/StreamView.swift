@@ -115,6 +115,8 @@ struct StreamView: View {
     /// finishes — see the Disconnect button, which now waits for the server
     /// to acknowledge the terminate.
     @State private var isDisconnecting = false
+    @AppStorage("boosteroid.launch.lastCheckpoint") private var lastLaunchCheckpoint = "Aucune tentative enregistrée"
+    @AppStorage("boosteroid.launch.inProgress") private var launchInProgress = false
 
     var body: some View {
         ZStack {
@@ -240,14 +242,34 @@ struct StreamView: View {
             }
         }
         .task { await start() }
+        .onChange(of: controller.state) { _, newState in
+            switch newState {
+            case .streaming:
+                lastLaunchCheckpoint = "Flux WebRTC actif"
+            case .failed:
+                lastLaunchCheckpoint = "Échec du streaming (application ouverte)"
+                launchInProgress = false
+            case .disconnected:
+                lastLaunchCheckpoint = "Session déconnectée"
+                launchInProgress = false
+            case .idle, .connecting:
+                break
+            }
+        }
         // Keep the Apple TV awake for the WHOLE session, queue included.
         // Otherwise the screen saver kicks in while waiting and the device can
         // sleep, suspending the app — which drops the control/realtime sockets
         // and loses the machine-ready window (tvOS gives no background
         // execution, so a suspended app cannot hold a queue).
-        .onAppear { UIApplication.shared.isIdleTimerDisabled = true }
+        .onAppear {
+            UIApplication.shared.isIdleTimerDisabled = true
+            launchInProgress = true
+            lastLaunchCheckpoint = "Écran de streaming affiché"
+        }
         .onDisappear {
             UIApplication.shared.isIdleTimerDisabled = false
+            lastLaunchCheckpoint = "Session fermée normalement"
+            launchInProgress = false
             // Always tears down THIS device's local WebRTC/control-socket
             // connection (StreamController.disconnect()) — the actual cloud
             // session is only ended explicitly via the Disconnect button
@@ -800,7 +822,9 @@ struct StreamView: View {
             Task { await realtimeClient.disconnect() }
         }
         do {
+            lastLaunchCheckpoint = "Authentification Boosteroid"
             let cookies = try await authManager.resolveCookies()
+            lastLaunchCheckpoint = "Demande de session et attente de machine"
             // createAndAwaitSession enqueues, then polls the CONFIRMED
             // last-session endpoint (EN = queued, LI = active) until ready
             // or 180s elapses, then fetches session/details for the real
@@ -825,8 +849,11 @@ struct StreamView: View {
             if let nodeBaseUrl = resolvedSession.nodeBaseUrl {
                 connectedServerName = gamesViewModel.playgroundName(forGatewayHost: nodeBaseUrl)
             }
+            lastLaunchCheckpoint = "Connexion WebRTC"
             await controller.connect(session: resolvedSession, settings: settings, cookies: cookies)
         } catch {
+            lastLaunchCheckpoint = "Erreur de démarrage interceptée par l'application"
+            launchInProgress = false
             errorMessage = error.localizedDescription
         }
     }
