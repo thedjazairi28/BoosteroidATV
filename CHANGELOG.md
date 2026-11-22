@@ -14,7 +14,7 @@
 | Base d'origine | `main` | `623c42b` | Version amont disponible | **Testée** : installation et streaming sur Apple TV |
 | V1 — Catalogue unifié | `feature/unified-catalog-v1` | `a788071` | **Réussie** le 20/11/2026 | **Non confirmé** |
 | V2 — Smart Experience | `feature/v2-smart-experience` | `fd60053` | **Réussie** le 20/11/2026 | **Non confirmé** |
-| V2.4.2 — Démarrage sécurisé (expérimental) | `feature/v2.4.2-safe-launch` | `baa8aa4` | **En cours** — [#45032408808](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45032408808) | **Non testé sur Apple TV** |
+| V2.4.2 — Démarrage sécurisé (expérimental) | `feature/v2.4.2-safe-launch` | `baa8aa4` | **Réussie** — [#45032408808](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45032408808) | **Non testé sur Apple TV** |
 | V2.4.1 — Stabilité du lancement (expérimental) | `feature/v2.4.1-launch-stability` | `3f16bd9` | **Réussie** — [#45030927237](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45030927237) | ❌ **KO : fermeture de l'application au lancement de tout jeu signalée** (22/11/2026) |
 | V2.4 — Souris virtuelle avec manette (expérimental) | `feature/v2.4-gamepad-pointer` | `fd7d78a` | **Réussie** — [#45026265985](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45026265985) | **Non testé sur Apple TV** |
 | V2.3.3 — Fiches épurées (expérimental) | `feature/v2.3.3-clean-game-cards` | `98a809c` | **En cours** — compilation GitHub Actions | **Non testé sur Apple TV** |
@@ -33,7 +33,7 @@
 **Base :** [V2.4](https://github.com/thedjazairi28/BoosteroidATV/tree/feature/v2.4-gamepad-pointer) — la V2.4.1 est **exclue** de cette branche.  
 **Nouvelle branche :** [feature/v2.4.2-safe-launch](https://github.com/thedjazairi28/BoosteroidATV/tree/feature/v2.4.2-safe-launch)  
 **Diff :** [V2.4 → V2.4.2](https://github.com/thedjazairi28/BoosteroidATV/compare/feature/v2.4-gamepad-pointer...feature/v2.4.2-safe-launch)  
-**Compilation :** [GitHub Actions #45032408808](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45032408808) — **en cours** à la rédaction.  
+**Compilation :** [GitHub Actions #45032408808](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45032408808) — **réussie**. Artifact : `BoosteroidATV-v2-4-2-safe-launch-unsigned` (ZIP contenant l'IPA), expiration **29 novembre 2026**.  
 **Test Apple TV :** non effectué.
 
 ### Modifications ciblées
