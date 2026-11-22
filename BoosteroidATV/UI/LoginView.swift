@@ -39,7 +39,7 @@ struct LoginView: View {
             }
             .font(.title2.weight(.bold))
 
-            Text("Sign in to Boosteroid")
+            Text("Connexion à Boosteroid")
                 .font(.title3)
                 .foregroundStyle(.secondary)
 
@@ -50,17 +50,17 @@ struct LoginView: View {
                 // "Name@x.com" — a real reported symptom ("we could not find
                 // those credentials" with a confirmed-correct password) that
                 // this fixes.
-                TextField("Email", text: $email)
+                TextField("Adresse e-mail", text: $email)
                     .textContentType(.username)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
-                SecureField("Password", text: $password)
+                SecureField("Mot de passe", text: $password)
                     .textContentType(.password)
             }
             .frame(maxWidth: 600)
             .padding(.top, 8)
 
-            Button("Sign In") {
+            Button("Se connecter") {
                 authManager.submitCredentials(email: email, password: password)
             }
             // .bordered (not .borderedProminent) + .gray: gives the standard
@@ -84,7 +84,7 @@ struct LoginView: View {
             ProgressView()
                 .scaleEffect(2)
                 .tint(.white)
-            Text("Signing in...")
+            Text("Connexion en cours…")
                 .font(.title2)
                 .foregroundStyle(.white)
         }
@@ -97,7 +97,7 @@ struct LoginView: View {
             Image(systemName: "exclamationmark.triangle.fill")
                 .font(.system(size: 60))
                 .foregroundStyle(.yellow)
-            Text("Sign In Failed")
+            Text("Échec de la connexion")
                 .font(.title.weight(.semibold))
                 .foregroundStyle(.white)
             // Diagnostic messages (raw response bodies) can be long — scroll
@@ -111,7 +111,7 @@ struct LoginView: View {
             }
             .frame(maxHeight: 400)
 
-            Button("Try Again") { authManager.login() }
+            Button("Réessayer") { authManager.login() }
                 .buttonStyle(.bordered)
                 .tint(.gray)
         }
