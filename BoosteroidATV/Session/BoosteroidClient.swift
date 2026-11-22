@@ -297,8 +297,18 @@ actor BoosteroidClient {
         guard (response as? HTTPURLResponse)?.statusCode == 200 else {
             throw BoosteroidClientError.requestFailed("fetchApplication", String(data: data, encoding: .utf8) ?? "")
         }
-        let dto = try JSONDecoder().decode(BoosteroidApplicationDTO.self, from: data)
-        return GameInfo(dto)
+        // The single-game endpoint's response envelope is not yet confirmed
+        // for every account: accept both a bare application and { "data": ... }.
+        // Failure is handled as optional enrichment by the caller.
+        let decoder = JSONDecoder()
+        if let dto = try? decoder.decode(BoosteroidApplicationDTO.self, from: data) {
+            return GameInfo(dto)
+        }
+        struct DetailEnvelope: Decodable {
+            let data: BoosteroidApplicationDTO
+        }
+        let envelope = try decoder.decode(DetailEnvelope.self, from: data)
+        return GameInfo(envelope.data)
     }
 
     // MARK: Current User
