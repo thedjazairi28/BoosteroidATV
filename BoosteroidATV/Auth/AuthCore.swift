@@ -138,11 +138,11 @@ nonisolated enum AuthError: Error, LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .noAuthCode: return "No authorization code received."
-        case .tokenExchangeFailed(let msg): return "Token exchange failed: \(msg)"
-        case .tokenRefreshFailed(let msg): return "Token refresh failed: \(msg)"
-        case .noSession: return "No authenticated session."
-        case .loginFailed(let msg): return "Login failed: \(msg)"
+        case .noAuthCode: return "Code d'autorisation non reçu."
+        case .tokenExchangeFailed(let msg): return "Échec de l'échange du jeton : \(msg)"
+        case .tokenRefreshFailed(let msg): return "Échec du renouvellement du jeton : \(msg)"
+        case .noSession: return "Aucune session authentifiée."
+        case .loginFailed(let msg): return "Échec de connexion : \(msg)"
         }
     }
 }
