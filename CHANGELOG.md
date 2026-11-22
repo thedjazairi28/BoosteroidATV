@@ -14,7 +14,7 @@
 | Base d'origine | `main` | `623c42b` | Version amont disponible | **Testée** : installation et streaming sur Apple TV |
 | V1 — Catalogue unifié | `feature/unified-catalog-v1` | `a788071` | **Réussie** le 20/11/2026 | **Non confirmé** |
 | V2 — Smart Experience | `feature/v2-smart-experience` | `fd60053` | **Réussie** le 20/11/2026 | **Non confirmé** |
-| V2.4.6 — Keychain fiable pour les rapports GitHub (expérimental) | `feature/v2.4.6-keychain-reliability` | `1a087da` | [Actions #45035783886](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45035783886) — en cours | **Non testé sur Apple TV** |
+| V2.4.6 — Keychain fiable pour les rapports GitHub (expérimental) | `feature/v2.4.6-keychain-reliability` | `1a087da` | **Réussie** — [Actions #45035783886](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45035783886) | **Non testé sur Apple TV** |
 | V2.4.5 — Traces de clic avant streaming (expérimental) | `feature/v2.4.5-prelaunch-trace` | `8220a93` | **Réussie** — [Actions #45034634363](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45034634363) | **Non testé sur Apple TV** |
 | V2.4.4 — Envoi des diagnostics GitHub (expérimental) | `feature/v2.4.4-github-reports` | `4b1eec8` | **Réussie** — [Actions #45033742386](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45033742386) | **Non testé sur Apple TV** |
 | V2.4.3 — Journal de lancement en direct (expérimental) | `feature/v2.4.3-live-logs` | `f0935be` | **Réussie** — [#45032820450](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45032820450) | **Non testé sur Apple TV** |
@@ -34,7 +34,7 @@
 
 **Branche :** [feature/v2.4.6-keychain-reliability](https://github.com/thedjazairi28/BoosteroidATV/tree/feature/v2.4.6-keychain-reliability) ; base V2.4.5.  
 **PR de revue :** [#3](https://github.com/thedjazairi28/BoosteroidATV/pull/3).  
-**Build :** [GitHub Actions #45035783886](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45035783886) — vérifier réussite avant installation.  
+**Build :** [GitHub Actions #45035783886](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45035783886) — **réussie** ; artifact `BoosteroidATV-v2-4-6-keychain-reliability-unsigned`, disponible jusqu'au **29 novembre 2026**.  
 **Apple TV :** non testé.
 
 ### Modifications
