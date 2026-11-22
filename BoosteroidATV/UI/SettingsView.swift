@@ -152,7 +152,7 @@ struct SettingsView: View {
                         .buttonStyle(.bordered)
                         .tint(.gray)
                     }
-                    Text("This setting takes effect the next time a game is started.")
+                    Text("Ce réglage s'appliquera au prochain lancement de jeu.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -290,7 +290,7 @@ private struct SettingsToggle: View {
             HStack {
                 Text(title)
                 Spacer()
-                Text(isOn ? "On" : "Off")
+                Text(isOn ? "Activé" : "Désactivé")
             }
             .font(.body)
             .foregroundStyle(isFocused ? .black : .white)
