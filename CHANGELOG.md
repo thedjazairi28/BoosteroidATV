@@ -14,7 +14,7 @@
 | Base d'origine | `main` | `623c42b` | Version amont disponible | **Testée** : installation et streaming sur Apple TV |
 | V1 — Catalogue unifié | `feature/unified-catalog-v1` | `a788071` | **Réussie** le 20/11/2026 | **Non confirmé** |
 | V2 — Smart Experience | `feature/v2-smart-experience` | `fd60053` | **Réussie** le 20/11/2026 | **Non confirmé** |
-| V2.2 — Filtres et fiches enrichies, interface FR (expérimental) | `feature/v2.2-multi-store-filters` | [branche V2.2](https://github.com/thedjazairi28/BoosteroidATV/tree/feature/v2.2-multi-store-filters) | **Compilation finale en cours** le 22/11/2026 | **Non testé sur Apple TV** |
+| V2.2 — Filtres et fiches enrichies, interface FR (expérimental) | `feature/v2.2-multi-store-filters` | `e4b1ba3` | **Réussie** le 22/11/2026 | **Non testé sur Apple TV** |
 | V2.1 — Stability | `feature/v2.1-stability` | `17df76b` | **Réussie** le 20/11/2026 | **3 OK, 3 KO** — 22/11/2026 (ligne rouge disparue, origine inconnue) |
 
 **Important :** V2 inclut V1, V2.1 inclut V1 + V2, et V2.2 part de V2.1. La branche `main` conserve le code de base : **aucune des branches expérimentales n'est fusionnée dans `main`** à la date de ce journal.
@@ -23,7 +23,7 @@
 
 **Branche :** [feature/v2.2-multi-store-filters](https://github.com/thedjazairi28/BoosteroidATV/tree/feature/v2.2-multi-store-filters)  
 **Comparaison avec V2.1 :** [diff V2.1 → V2.2](https://github.com/thedjazairi28/BoosteroidATV/compare/feature/v2.1-stability...feature/v2.2-multi-store-filters)  
-**Compilation :** [premier build des filtres #45020911625](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45020911625) — **réussi** ; [nouveau build de l'ensemble des changements #45021265100](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45021265100) — **en cours à la rédaction**.  
+**Compilation :** [premier build des filtres #45020911625](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45020911625) — **réussi** ; [build complet des filtres, fiches et français #45021265100](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45021265100) — **réussi**. Artifact : `BoosteroidATV-v2-2-multi-store-filters-unsigned` (ZIP contenant l'IPA) ; expiration GitHub **29 novembre 2026**.  
 **Tests tvOS :** non effectués sur cette version.
 
 ### Ajouté
@@ -166,8 +166,9 @@ Les téléchargements GitHub Actions se trouvent dans la rubrique **Artifacts** 
 | V1 | `BoosteroidATV-unified-catalog-unsigned` | [#44825820586](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/44825820586) |
 | V2 | `BoosteroidATV-v2-unsigned` | [#44836464798](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/44836464798) |
 | V2.1 | `BoosteroidATV-v2-1-stability-unsigned` | [#44839880457](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/44839880457) |
+| V2.2 | `BoosteroidATV-v2-2-multi-store-filters-unsigned` | [#45021265100](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45021265100) |
 
-**Expiration annoncée par GitHub : 27 novembre 2026.** Après expiration, relancer un build ou publier un fichier dans **Releases** pour disposer d'un téléchargement plus durable. Aucun Release propre à ce fork n'a été trouvé lors de la rédaction.
+**Expiration annoncée par GitHub : 27 novembre 2026 pour V1/V2/V2.1 ; 29 novembre 2026 pour V2.2.** Après expiration, relancer un build ou publier un fichier dans **Releases** pour disposer d'un téléchargement plus durable. Aucun Release propre à ce fork n'a été trouvé lors de la rédaction.
 
 ## À faire / à valider
 
