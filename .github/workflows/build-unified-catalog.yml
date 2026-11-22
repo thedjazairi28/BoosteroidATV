@@ -10,6 +10,7 @@ on:
       - feature/v2.3-french-trailers
       - feature/v2.3.1-video-diagnostics
       - feature/v2.3.2-hls-trailers
+      - feature/v2.3.3-clean-game-cards
   workflow_dispatch:
 
 permissions:
@@ -30,12 +31,12 @@ jobs:
       - name: Build unsigned IPA
         run: |
           chmod +x scripts/build-ipa.sh
-          VERSION=2026.11.22.5 ./scripts/build-ipa.sh
+          VERSION=2026.11.22.6 ./scripts/build-ipa.sh
 
       - name: Upload unsigned IPA for atvloadly
         uses: actions/upload-artifact@v4
         with:
-          name: BoosteroidATV-v2-3-2-hls-trailers-unsigned
+          name: BoosteroidATV-v2-3-3-clean-game-cards-unsigned
           path: build/*.ipa
           if-no-files-found: error
           retention-days: 7
