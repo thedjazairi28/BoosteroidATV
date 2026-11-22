@@ -14,6 +14,7 @@
 | Base d'origine | `main` | `623c42b` | Version amont disponible | **Testée** : installation et streaming sur Apple TV |
 | V1 — Catalogue unifié | `feature/unified-catalog-v1` | `a788071` | **Réussie** le 20/11/2026 | **Non confirmé** |
 | V2 — Smart Experience | `feature/v2-smart-experience` | `fd60053` | **Réussie** le 20/11/2026 | **Non confirmé** |
+| V2.4.2 — Démarrage sécurisé (expérimental) | `feature/v2.4.2-safe-launch` | `baa8aa4` | **En cours** — [#45032408808](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45032408808) | **Non testé sur Apple TV** |
 | V2.4.1 — Stabilité du lancement (expérimental) | `feature/v2.4.1-launch-stability` | `3f16bd9` | **Réussie** — [#45030927237](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45030927237) | ❌ **KO : fermeture de l'application au lancement de tout jeu signalée** (22/11/2026) |
 | V2.4 — Souris virtuelle avec manette (expérimental) | `feature/v2.4-gamepad-pointer` | `fd7d78a` | **Réussie** — [#45026265985](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45026265985) | **Non testé sur Apple TV** |
 | V2.3.3 — Fiches épurées (expérimental) | `feature/v2.3.3-clean-game-cards` | `98a809c` | **En cours** — compilation GitHub Actions | **Non testé sur Apple TV** |
@@ -24,6 +25,33 @@
 | V2.1 — Stability | `feature/v2.1-stability` | `17df76b` | **Réussie** le 20/11/2026 | **3 OK, 3 KO** — 22/11/2026 (ligne rouge disparue, origine inconnue) |
 
 **Important :** V2 inclut V1, V2.1 inclut V1 + V2, V2.2 part de V2.1 et V2.3 part de V2.2. La branche `main` conserve le code de base : **aucune des branches expérimentales n'est fusionnée dans `main`** à la date de ce journal.
+
+## 22 novembre 2026 — V2.4.2 « Démarrage sécurisé » (correctif expérimental)
+
+**Contexte :** le correctif V2.4.1 n'a pas résolu les fermetures au lancement et l'utilisateur signale que la fermeture concerne désormais **tous les jeux**. La V2.4.1 est considérée comme **KO** et n'est pas une base sûre.
+
+**Base :** [V2.4](https://github.com/thedjazairi28/BoosteroidATV/tree/feature/v2.4-gamepad-pointer) — la V2.4.1 est **exclue** de cette branche.  
+**Nouvelle branche :** [feature/v2.4.2-safe-launch](https://github.com/thedjazairi28/BoosteroidATV/tree/feature/v2.4.2-safe-launch)  
+**Diff :** [V2.4 → V2.4.2](https://github.com/thedjazairi28/BoosteroidATV/compare/feature/v2.4-gamepad-pointer...feature/v2.4.2-safe-launch)  
+**Compilation :** [GitHub Actions #45032408808](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45032408808) — **en cours** à la rédaction.  
+**Test Apple TV :** non effectué.
+
+### Modifications ciblées
+
+1. Désactivation **par défaut** des aperçus vidéo HLS dans les fiches des jeux et le carrousel de la Bibliothèque, afin d'éliminer leur décodeur AVPlayer du parcours de lancement WebRTC. Les images fixes, descriptions, fiches, filtres et souris à la manette restent présents.
+2. Nouveau réglage **« Aperçus vidéo animés (expérimental) »** pour réactiver manuellement les bandes-annonces si l'on souhaite comparer les comportements sans changer d'IPA. Valeur initiale OFF.
+3. Protection contre les demandes de lancement multiples dans `MainTabView.launch`.
+4. Ajout d'un **checkpoint de lancement non sensible**, conservé localement : ouverture de la vue, authentification, attente du serveur, connexion WebRTC et flux actif. La dernière étape est affichée dans **Réglages → Diagnostics**, avec un avertissement si la tentative n'a pas enregistré de fermeture normale.
+5. Les clés et données d'authentification, les mots de passe, les jetons et les identifiants de session ne sont jamais écrits dans ces checkpoints.
+
+### Limites et test prioritaire
+
+- **La cause réelle du retour à l'accueil tvOS n'est pas démontrée** : si le processus est tué (Jetsam ou crash Swift), la gestion des erreurs réseau Swift ne pourra pas le rattraper. Le nouveau réglage teste l'hypothèse de la concurrence AVPlayer/WebRTC sans la présenter comme certaine.
+- [ ] Installer l'IPA V2.4.2, conserver les aperçus vidéo **désactivés**.
+- [ ] Essayer « Jouer » sur un jeu précédemment fonctionnel, puis « Installer et jouer » sur un autre.
+- [ ] Si l'app se ferme : la rouvrir, consulter **Réglages → Diagnostics**, relever la « Dernière étape de lancement ».
+- [ ] Si le problème subsiste, récupérer le rapport tvOS de type **JetsamEvent** ou rapport de crash et isoler la pile fautive avant une autre modification du moteur de streaming.
+- [ ] Ne pas fusionner les travaux V2.5 « Mes jeux » avant la stabilisation du lancement.
 
 ## 22 novembre 2026 — V2.4.1 « Stabilité du lancement » (correctif expérimental)
 
