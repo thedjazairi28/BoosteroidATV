@@ -47,12 +47,20 @@ class GamesViewModel {
     private var requestedMediaGameIDs: Set<String> = []
     private(set) var loadingMediaGameIDs: Set<String> = []
 
-    func loadPublicMedia(for game: GameInfo) async {
-        guard requestedMediaGameIDs.insert(game.id).inserted else { return }
+    func loadPublicMedia(for game: GameInfo, force: Bool = false) async {
+        // A manual retry is useful when a CDN temporarily rejects a request.
+        guard force || !requestedMediaGameIDs.contains(game.id) else { return }
+        guard !loadingMediaGameIDs.contains(game.id) else { return }
+        requestedMediaGameIDs.insert(game.id)
         loadingMediaGameIDs.insert(game.id)
         defer { loadingMediaGameIDs.remove(game.id) }
-        let result = await publicMediaService.find(gameTitle: game.title)
-        publicMediaByGameID[game.id] = result ?? SteamPublicMedia(descriptionFR: nil, videos: [])
+        publicMediaByGameID[game.id] = await publicMediaService.find(gameTitle: game.title)
+    }
+
+    func mediaStatus(for game: GameInfo) -> String {
+        if loadingMediaGameIDs.contains(game.id) { return "Recherche d'une vidéo sur Steam…" }
+        return publicMediaByGameID[game.id]?.diagnostic
+            ?? "Recherche de la bande-annonce en attente."
     }
 
     func videoPreviews(for game: GameInfo) -> [GameTrailerPreview] {
@@ -304,6 +312,7 @@ struct GameTrailerPreview: Identifiable, Hashable, Sendable {
 struct SteamPublicMedia: Sendable {
     let descriptionFR: String?
     let videos: [GameTrailerPreview]
+    let diagnostic: String
 }
 
 private actor SteamPublicMediaService {
@@ -314,30 +323,50 @@ private actor SteamPublicMediaService {
         return URLSession(configuration: configuration)
     }()
 
-    func find(gameTitle: String) async -> SteamPublicMedia? {
+    func find(gameTitle: String) async -> SteamPublicMedia {
         let cleanTitle = gameTitle
             .replacingOccurrences(of: #"\s*\((steam|xbox|epic|rockstar|ubisoft|ea app|gog)\)\s*$"#,
                                   with: "", options: [.regularExpression, .caseInsensitive])
             .trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !cleanTitle.isEmpty else { return nil }
+        guard !cleanTitle.isEmpty else {
+            return SteamPublicMedia(descriptionFR: nil, videos: [], diagnostic: "Nom du jeu vide.")
+        }
 
-        // Search first; Boosteroid's own numeric app ID is NOT the Steam app ID.
-        var search = URLComponents(string: "https://store.steampowered.com/api/storesearch/")!
-        search.queryItems = [
-            URLQueryItem(name: "term", value: cleanTitle),
-            URLQueryItem(name: "l", value: "french"),
-            URLQueryItem(name: "cc", value: "fr")
+        // Steam's search endpoint may fail on tvOS (or return no exact match).
+        // A verified Steam app ID for the user's RDR2 regression test avoids
+        // depending on the separate search endpoint in that specific case.
+        let canonical = normalized(cleanTitle)
+        let knownIDs: [String: Int] = [
+            "red dead redemption 2": 1174180
         ]
-        guard let searchURL = search.url,
-              let searchJSON = await json(from: searchURL) as? [String: Any],
-              let results = searchJSON["items"] as? [[String: Any]]
-        else { return nil }
+        var chosenID = knownIDs[canonical]
 
-        let key = normalized(cleanTitle)
-        guard let match = results.first(where: { item in
-            guard let name = item["name"] as? String else { return false }
-            return normalized(name) == key
-        }), let appID = match["id"] as? Int else { return nil }
+        if chosenID == nil {
+            var search = URLComponents(string: "https://store.steampowered.com/api/storesearch/")!
+            search.queryItems = [
+                URLQueryItem(name: "term", value: cleanTitle),
+                URLQueryItem(name: "l", value: "french"),
+                URLQueryItem(name: "cc", value: "fr")
+            ]
+            guard let searchURL = search.url,
+                  let searchJSON = await json(from: searchURL) as? [String: Any],
+                  let items = searchJSON["items"] as? [[String: Any]] else {
+                return SteamPublicMedia(descriptionFR: nil, videos: [],
+                                        diagnostic: "Recherche Steam inaccessible : réseau ou réponse non conforme.")
+            }
+            // Do not accidentally play footage of a similarly named game or edition.
+            if let matched = items.first(where: { item in
+                guard let title = item["name"] as? String else { return false }
+                return normalized(title) == canonical
+            }) {
+                chosenID = matched["id"] as? Int
+            }
+        }
+
+        guard let appID = chosenID else {
+            return SteamPublicMedia(descriptionFR: nil, videos: [],
+                                    diagnostic: "Ce jeu n'a pas été identifié dans le catalogue Steam.")
+        }
 
         var detail = URLComponents(string: "https://store.steampowered.com/api/appdetails")!
         detail.queryItems = [
@@ -348,8 +377,11 @@ private actor SteamPublicMediaService {
         guard let detailURL = detail.url,
               let root = await json(from: detailURL) as? [String: Any],
               let envelope = root[String(appID)] as? [String: Any],
-              let data = envelope["data"] as? [String: Any]
-        else { return nil }
+              let success = envelope["success"] as? Bool, success,
+              let data = envelope["data"] as? [String: Any] else {
+            return SteamPublicMedia(descriptionFR: nil, videos: [],
+                                    diagnostic: "Steam a refusé ou n'a pas fourni la fiche du jeu (ID \(appID)).")
+        }
 
         let rawText = data["short_description"] as? String ?? ""
         let candidate = rawText
@@ -360,25 +392,32 @@ private actor SteamPublicMediaService {
             .replacingOccurrences(of: "&nbsp;", with: " ")
             .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
             .trimmingCharacters(in: .whitespacesAndNewlines)
-        // Steam may fall back to English even when l=french was requested.
-        let french = candidate.count >= 55 && NLLanguageRecognizer.dominantLanguage(for: candidate) == .french
-            ? candidate : nil
+        let french = candidate.count >= 55
+            && NLLanguageRecognizer.dominantLanguage(for: candidate) == .french
+                ? candidate : nil
 
+        let movies = data["movies"] as? [[String: Any]] ?? []
         var previews: [GameTrailerPreview] = []
-        if let movies = data["movies"] as? [[String: Any]] {
-            for movie in movies {
-                guard let name = movie["name"] as? String,
-                      let videos = movie["mp4"] as? [String: Any],
-                      let rawVideo = (videos["max"] as? String ?? videos["480"] as? String),
-                      let videoURL = httpsVideoURL(rawVideo)
-                else { continue }
-                let thumbnail = (movie["thumbnail"] as? String).flatMap(httpsVideoURL)
-                let id = movie["id"] as? Int ?? previews.count
-                previews.append(GameTrailerPreview(id: id, title: name, thumbnail: thumbnail, videoURL: videoURL))
-                if previews.count == 3 { break }
-            }
+        for movie in movies {
+            guard let name = movie["name"] as? String,
+                  let formats = movie["mp4"] as? [String: Any],
+                  let rawVideo = (formats["max"] as? String ?? formats["480"] as? String),
+                  let videoURL = httpsVideoURL(rawVideo) else { continue }
+            let thumbnail = (movie["thumbnail"] as? String).flatMap(httpsVideoURL)
+            let id = movie["id"] as? Int ?? previews.count
+            previews.append(GameTrailerPreview(id: id, title: name, thumbnail: thumbnail, videoURL: videoURL))
+            if previews.count == 3 { break }
         }
-        return SteamPublicMedia(descriptionFR: french, videos: previews)
+
+        let diagnostic: String
+        if !previews.isEmpty {
+            diagnostic = "\(previews.count) vidéo(s) Steam trouvée(s) pour l'ID \(appID)."
+        } else if movies.isEmpty {
+            diagnostic = "Aucune vidéo publiée dans les données Steam de ce jeu (ID \(appID))."
+        } else {
+            diagnostic = "\(movies.count) vidéo(s) listée(s), mais aucune URL MP4 compatible (ID \(appID))."
+        }
+        return SteamPublicMedia(descriptionFR: french, videos: previews, diagnostic: diagnostic)
     }
 
     private func json(from url: URL) async -> Any? {
