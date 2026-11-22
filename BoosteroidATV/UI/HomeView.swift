@@ -502,6 +502,11 @@ private struct LibraryCarouselView: View {
         .onExitCommand(perform: onDismiss)
         .defaultFocus($actionFocus, .play)
         .task(id: request.games[currentIndex].id) {
+            // Rapid left/right navigation must not fan out dozens of API requests.
+            // SwiftUI cancels this task when the selected game changes.
+            do { try await Task.sleep(for: .milliseconds(450)) }
+            catch { return }
+            guard !Task.isCancelled else { return }
             await viewModel.loadGameDetails(request.games[currentIndex], authManager: authManager)
         }
     }
