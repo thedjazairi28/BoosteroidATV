@@ -14,6 +14,7 @@
 | Base d'origine | `main` | `623c42b` | Version amont disponible | **Testée** : installation et streaming sur Apple TV |
 | V1 — Catalogue unifié | `feature/unified-catalog-v1` | `a788071` | **Réussie** le 20/11/2026 | **Non confirmé** |
 | V2 — Smart Experience | `feature/v2-smart-experience` | `fd60053` | **Réussie** le 20/11/2026 | **Non confirmé** |
+| V2.4 — Souris virtuelle avec manette (expérimental) | `feature/v2.4-gamepad-pointer` | `fd7d78a` | **En cours** — [#45026265985](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45026265985) | **Non testé sur Apple TV** |
 | V2.3.3 — Fiches épurées (expérimental) | `feature/v2.3.3-clean-game-cards` | `98a809c` | **En cours** — compilation GitHub Actions | **Non testé sur Apple TV** |
 | V2.3.2 — Lecteur HLS Steam (expérimental) | `feature/v2.3.2-hls-trailers` | `b95d82a` | **Réussie** — [#45024722519](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45024722519) | **Non testé sur Apple TV** |
 | V2.3.1 — Diagnostic des aperçus vidéo (expérimental) | `feature/v2.3.1-video-diagnostics` | `dcc7ac6` | **Réussie** le 22/11/2026 — [#45024136324](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45024136324) | **Non testé sur Apple TV** |
@@ -22,6 +23,39 @@
 | V2.1 — Stability | `feature/v2.1-stability` | `17df76b` | **Réussie** le 20/11/2026 | **3 OK, 3 KO** — 22/11/2026 (ligne rouge disparue, origine inconnue) |
 
 **Important :** V2 inclut V1, V2.1 inclut V1 + V2, V2.2 part de V2.1 et V2.3 part de V2.2. La branche `main` conserve le code de base : **aucune des branches expérimentales n'est fusionnée dans `main`** à la date de ce journal.
+
+## 22 novembre 2026 — V2.4 « Souris virtuelle avec manette » (expérimental)
+
+**Demande :** piloter le pointeur dans Steam et les lanceurs directement avec la manette Xbox/PlayStation, sans recourir à la surface tactile de la Siri Remote.
+
+**Branche :** [feature/v2.4-gamepad-pointer](https://github.com/thedjazairi28/BoosteroidATV/tree/feature/v2.4-gamepad-pointer)  
+**Comparaison :** [V2.3.3 → V2.4](https://github.com/thedjazairi28/BoosteroidATV/compare/feature/v2.3.3-clean-game-cards...feature/v2.4-gamepad-pointer)  
+**Compilation :** [GitHub Actions #45026265985](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45026265985) — **en cours** lors de l'ajout du journal.  
+**Tests Apple TV :** non effectués sur la V2.4.
+
+### Fonctionnement
+
+- Le mode **« Pointeur »** de la barre d'options accepte désormais aussi le **joystick droit** d'une manette compatible pour déplacer le curseur.
+- **A (Xbox) / Croix (PlayStation)** déclenche un **clic gauche** envoyé séquentiellement au PC distant.
+- **B (Xbox) / Rond (PlayStation)** permet de **quitter le mode Pointeur** et de reprendre les contrôles du jeu.
+- Le joystick droit applique une **zone morte** et une **vitesse progressive** adaptée à la résolution du flux ; les coordonnées restent celles du bureau distant.
+- Les boutons et axes de la manette sont **neutralisés et non transmis au jeu en mode Pointeur** afin d'éviter mouvements de caméra et actions involontaires.
+- À la sortie du mode, l'état des boutons tenus est pris en compte pour que B/Rond ne déclenche pas une action non voulue en jeu.
+- **Start + Select** reste utilisable pour ouvrir/fermer la barre d'options.
+- Le mode existant avec la **Siri Remote** reste disponible et inchangé. Hors mode Pointeur, la manette continue à piloter le jeu normalement.
+- L'aide intégrée en français décrit les nouvelles commandes.
+
+### À valider sur Apple TV
+
+- [ ] Ouvrir un jeu Boosteroid, afficher le menu avec Start + Select, puis activer « Pointeur ».
+- [ ] Vérifier le mouvement du curseur avec le joystick droit, y compris vers les bords et en diagonale.
+- [ ] Vérifier qu'A/Croix clique sans déclencher d'action dans le jeu distant.
+- [ ] Vérifier que B/Rond sort du mode Pointeur sans agir dans le jeu.
+- [ ] Vérifier l'absence de « stuck buttons » ou de mouvement involontaire au retour au contrôle normal.
+- [ ] Vérifier l'accès à la barre d'options et la compatibilité de la Siri Remote.
+- [ ] Tester au minimum Steam et un jeu actif, avec une manette Xbox ; PlayStation est prévu mais pas encore validé.
+
+**Limite :** nouveau routage des entrées `GameController` vers le protocole souris Boosteroid ; le fonctionnement réel, notamment la prise en charge des clics, doit être validé sur matériel. Compilation réussie ≠ test fonctionnel.
 
 ## 22 novembre 2026 — V2.3.3 « Fiches de jeu épurées » (correctif expérimental)
 
