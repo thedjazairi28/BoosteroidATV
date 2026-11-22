@@ -14,6 +14,7 @@
 | Base d'origine | `main` | `623c42b` | Version amont disponible | **Testée** : installation et streaming sur Apple TV |
 | V1 — Catalogue unifié | `feature/unified-catalog-v1` | `a788071` | **Réussie** le 20/11/2026 | **Non confirmé** |
 | V2 — Smart Experience | `feature/v2-smart-experience` | `fd60053` | **Réussie** le 20/11/2026 | **Non confirmé** |
+| V2.4.4 — Envoi des diagnostics GitHub (expérimental) | `feature/v2.4.4-github-reports` | `4b1eec8` | **En cours** — [Actions #45033742386](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45033742386) | **Non testé sur Apple TV** |
 | V2.4.3 — Journal de lancement en direct (expérimental) | `feature/v2.4.3-live-logs` | `f0935be` | **Réussie** — [#45032820450](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45032820450) | **Non testé sur Apple TV** |
 | V2.4.2 — Démarrage sécurisé (expérimental) | `feature/v2.4.2-safe-launch` | `baa8aa4` | **Réussie** — [#45032408808](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45032408808) | **Non testé sur Apple TV** |
 | V2.4.1 — Stabilité du lancement (expérimental) | `feature/v2.4.1-launch-stability` | `3f16bd9` | **Réussie** — [#45030927237](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45030927237) | ❌ **KO : fermeture de l'application au lancement de tout jeu signalée** (22/11/2026) |
@@ -26,6 +27,24 @@
 | V2.1 — Stability | `feature/v2.1-stability` | `17df76b` | **Réussie** le 20/11/2026 | **3 OK, 3 KO** — 22/11/2026 (ligne rouge disparue, origine inconnue) |
 
 **Important :** V2 inclut V1, V2.1 inclut V1 + V2, V2.2 part de V2.1 et V2.3 part de V2.2. La branche `main` conserve le code de base : **aucune des branches expérimentales n'est fusionnée dans `main`** à la date de ce journal.
+
+## 22 novembre 2026 — V2.4.4 « Rapports GitHub depuis l'Apple TV » (diagnostic expérimental)
+
+**Branche :** [feature/v2.4.4-github-reports](https://github.com/thedjazairi28/BoosteroidATV/tree/feature/v2.4.4-github-reports) — dérivée de V2.4.3, sans reprendre la V2.4.1 KO.  
+**Pull request de revue :** [#1](https://github.com/thedjazairi28/BoosteroidATV/pull/1).  
+**Compilation :** [GitHub Actions #45033742386](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45033742386) — en cours lors de la rédaction.  
+**Essai terrain :** à réaliser sur Apple TV.
+
+### Fonctionnement
+
+- **Réglages → Diagnostics → Envoyer un rapport d'erreur** : action manuelle qui crée une Issue GitHub dans un dépôt configurable.
+- Conservation du mode V2.4.3 : journal des 80 événements persistants et checkpoint après fermeture de l'application ; l'envoi reprend ces événements pour permettre un diagnostic à distance.
+- L'Apple TV conserve le jeton GitHub **fine-grained**, restreint à **Issues: Read and write**, dans son **Keychain**, jamais dans le dépôt ni dans UserDefaults.
+- Le rapport contient la date, la version de l'application, tvOS, le dernier checkpoint et les événements applicatifs filtrés, avec masquage additionnel des URL et champs suspects.
+- Affichage sur l'Apple TV du numéro et de l'URL de l'Issue créée, ou d'un diagnostic d'erreur HTTP (401/403/404).
+- Documentation d'installation : [docs/diagnostics-github-issues.md](https://github.com/thedjazairi28/BoosteroidATV/blob/feature/v2.4.4-github-reports/docs/diagnostics-github-issues.md).
+
+**Limites :** dépôt public = Issues publiques (préférer un dépôt privé) ; un envoi nécessite un jeton configuré et un réseau fonctionnel ; les logs d'application ne remplacent pas un rapport tvOS de crash natif ou Jetsam. **La V2.4.4 ne corrige pas encore le crash** ; elle facilite son investigation. Compilation et envoi restent à valider.
 
 ## 22 novembre 2026 — V2.4.3 « Journal de lancement en direct » (diagnostic expérimental)
 
