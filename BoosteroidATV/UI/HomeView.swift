@@ -154,6 +154,7 @@ struct GameOverviewView: View {
     let onToggleFavorite: () -> Void
     let onDismiss: () -> Void
 
+    @State private var videoPlaybackError: String?
     private var shownGame: GameInfo { viewModel.enrichedGame(game) }
 
     var body: some View {
@@ -164,7 +165,7 @@ struct GameOverviewView: View {
                 ZStack {
                     heroArtwork
                     if let videoURL = viewModel.backgroundVideo(for: game) {
-                        SilentGameVideoBackground(url: videoURL)
+                        SilentGameVideoBackground(url: videoURL, onError: { videoPlaybackError = $0 })
                             .allowsHitTesting(false)
                     }
                 }
@@ -219,6 +220,22 @@ struct GameOverviewView: View {
                                     .font(.callout)
                                     .foregroundStyle(.white.opacity(0.8))
                                     .lineLimit(2)
+                            }
+                        }
+                        .frame(maxWidth: 800, alignment: .leading)
+
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(videoPlaybackError ?? viewModel.mediaStatus(for: game))
+                                .font(.caption)
+                                .foregroundStyle(.white.opacity(0.8))
+                                .lineLimit(2)
+                            if viewModel.backgroundVideo(for: game) == nil
+                                && !viewModel.loadingMediaGameIDs.contains(game.id) {
+                                Button("Réessayer l'aperçu vidéo") {
+                                    Task { await viewModel.loadPublicMedia(for: game, force: true) }
+                                }
+                                .font(.caption)
+                                .buttonStyle(.bordered)
                             }
                         }
                         .frame(maxWidth: 800, alignment: .leading)
@@ -293,15 +310,16 @@ struct GameOverviewView: View {
 
 private struct SilentGameVideoBackground: UIViewRepresentable {
     let url: URL
+    let onError: (String) -> Void
 
     func makeUIView(context: Context) -> SilentGameVideoSurface {
         let view = SilentGameVideoSurface()
-        view.start(url: url)
+        view.start(url: url, onError: onError)
         return view
     }
 
     func updateUIView(_ uiView: SilentGameVideoSurface, context: Context) {
-        uiView.start(url: url)
+        uiView.start(url: url, onError: onError)
     }
 
     static func dismantleUIView(_ uiView: SilentGameVideoSurface, coordinator: ()) {
@@ -315,6 +333,8 @@ private final class SilentGameVideoSurface: UIView {
     private var activeURL: URL?
     private var player: AVQueuePlayer?
     private var looper: AVPlayerLooper?
+    private var playerStatusObservation: NSKeyValueObservation?
+    private var onError: ((String) -> Void)?
 
     private var videoLayer: AVPlayerLayer { layer as! AVPlayerLayer }
 
@@ -331,9 +351,11 @@ private final class SilentGameVideoSurface: UIView {
         super.init(coder: coder)
     }
 
-    func start(url: URL) {
+    func start(url: URL, onError: @escaping (String) -> Void) {
+        self.onError = onError
         guard activeURL != url else { return }
         stop()
+        self.onError = onError
         activeURL = url
 
         let queue = AVQueuePlayer()
@@ -343,17 +365,27 @@ private final class SilentGameVideoSurface: UIView {
         looper = AVPlayerLooper(player: queue, templateItem: AVPlayerItem(url: url))
         player = queue
         videoLayer.player = queue
+        playerStatusObservation = queue.observe(\.status, options: [.new]) { [weak self] observed, _ in
+            guard observed.status == .failed else { return }
+            let detail = observed.error?.localizedDescription ?? "Erreur de décodage ou d'accès au média."
+            DispatchQueue.main.async { [weak self] in
+                self?.onError?("La vidéo a été trouvée, mais le lecteur tvOS a échoué : " + detail)
+            }
+        }
         queue.play()
     }
 
     func stop() {
+        playerStatusObservation?.invalidate()
+        playerStatusObservation = nil
         player?.pause()
         looper?.disableLooping()
-        player?.removeAllItems()
+        // AVPlayerLooper owns the queue while active: do not manipulate its items.
         videoLayer.player = nil
         looper = nil
         player = nil
         activeURL = nil
+        onError = nil
     }
 
     deinit {
@@ -530,6 +562,7 @@ private struct LibraryCarouselView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var currentIndex: Int
     @State private var navigationDirection = 1
+    @State private var videoPlaybackError: String?
     @FocusState private var actionFocus: ActionFocus?
 
     init(request: LibraryCarouselRequest, onPlay: @escaping (GameInfo) -> Void, onDismiss: @escaping () -> Void) {
@@ -603,6 +636,7 @@ private struct LibraryCarouselView: View {
         }
         .onExitCommand(perform: onDismiss)
         .defaultFocus($actionFocus, .play)
+        .onChange(of: currentIndex) { _, _ in videoPlaybackError = nil }
         .task(id: request.games[currentIndex].id) {
             // Rapid navigation must not trigger dozens of requests.
             do { try await Task.sleep(for: .milliseconds(450)) }
@@ -650,7 +684,7 @@ private struct LibraryCarouselView: View {
             ZStack {
                 carouselArtwork(game)
                 if let videoURL = viewModel.backgroundVideo(for: game) {
-                    SilentGameVideoBackground(url: videoURL)
+                    SilentGameVideoBackground(url: videoURL, onError: { videoPlaybackError = $0 })
                         .allowsHitTesting(false)
                 }
             }
@@ -701,6 +735,21 @@ private struct LibraryCarouselView: View {
                         .foregroundStyle(.white.opacity(0.90))
                         .lineLimit(5)
                         .fixedSize(horizontal: false, vertical: true)
+
+                    VStack(alignment: .leading, spacing: 7) {
+                        Text(videoPlaybackError ?? viewModel.mediaStatus(for: game))
+                            .font(.system(size: 16))
+                            .foregroundStyle(.white.opacity(0.75))
+                            .lineLimit(2)
+                        if viewModel.backgroundVideo(for: game) == nil
+                            && !viewModel.loadingMediaGameIDs.contains(game.id) {
+                            Button("Réessayer la vidéo") {
+                                Task { await viewModel.loadPublicMedia(for: game, force: true) }
+                            }
+                            .font(.system(size: 17))
+                            .buttonStyle(.bordered)
+                        }
+                    }
 
                     if !game.storeIdentifiers.isEmpty {
                         Text("Boutiques : " + GameDetailsFR.stores(for: game))
