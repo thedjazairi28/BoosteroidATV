@@ -288,10 +288,15 @@ struct StreamView: View {
             togglePauseBar()
         }
         .onReceive(NotificationCenter.default.publisher(for: .gamepadInputBegan)) { _ in
-            // A controller press means the user has returned to gamepad play.
-            // Turn off the locally drawn pointer; InputSender simultaneously
-            // hides and parks the remote Windows cursor.
+            // Normal gamepad input cancels Siri Remote pointer mode as before,
+            // but gamepad-pointer input is intercepted locally and never
+            // generates this notification.
             pointerMode = false
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .gamepadPointerExitRequested)) { _ in
+            // B (Xbox) / Circle (PlayStation): return to native gamepad controls.
+            pointerMode = false
+            showOverlay = false
         }
     }
 
