@@ -94,7 +94,7 @@ actor BoosteroidAuthAPI {
         do {
             (data, response) = try await session.data(for: request)
         } catch {
-            throw AuthError.loginFailed("Couldn't reach Boosteroid: \(error.localizedDescription)")
+            throw AuthError.loginFailed("Impossible de contacter Boosteroid : \(error.localizedDescription)")
         }
         guard let http = response as? HTTPURLResponse else {
             throw AuthError.loginFailed("No HTTP response.")
