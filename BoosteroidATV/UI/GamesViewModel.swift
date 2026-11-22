@@ -405,10 +405,24 @@ private actor SteamPublicMediaService {
         let movies = data["movies"] as? [[String: Any]] ?? []
         var previews: [GameTrailerPreview] = []
         for movie in movies {
-            guard let name = movie["name"] as? String,
-                  let formats = movie["mp4"] as? [String: Any],
-                  let rawVideo = (formats["max"] as? String ?? formats["480"] as? String),
-                  let videoURL = httpsVideoURL(rawVideo) else { continue }
+            guard let name = movie["name"] as? String else { continue }
+
+            // Steam has progressively replaced downloadable MP4 trailer URLs
+            // with an H.264 HLS master playlist. tvOS AVPlayer can play HLS
+            // directly: no transcoding, download, YouTube or external player.
+            // Keep the old MP4 source as a fallback for older game records.
+            let rawHLS = (movie["hls_h264"] as? String) ?? (movie["hls"] as? String)
+            let rawMP4 = (movie["mp4"] as? [String: Any]).flatMap {
+                ($0["max"] as? String) ?? ($0["480"] as? String)
+            }
+            let hlsURL = rawHLS.flatMap(httpsVideoURL).flatMap { url in
+                url.path.lowercased().hasSuffix(".m3u8") ? url : nil
+            }
+            let mp4URL = rawMP4.flatMap(httpsVideoURL).flatMap { url in
+                url.path.lowercased().hasSuffix(".mp4") ? url : nil
+            }
+            guard let videoURL = hlsURL ?? mp4URL else { continue }
+
             let thumbnail = (movie["thumbnail"] as? String).flatMap(httpsVideoURL)
             let id = movie["id"] as? Int ?? previews.count
             previews.append(GameTrailerPreview(id: id, title: name, thumbnail: thumbnail, videoURL: videoURL))
@@ -417,11 +431,12 @@ private actor SteamPublicMediaService {
 
         let diagnostic: String
         if !previews.isEmpty {
-            diagnostic = "\(previews.count) vidéo(s) Steam trouvée(s) pour l'ID \(appID)."
+            let hlsCount = previews.filter { $0.videoURL.path.lowercased().hasSuffix(".m3u8") }.count
+            diagnostic = "\(previews.count) vidéo(s) trouvée(s) pour l'ID \(appID) (\(hlsCount) HLS)."
         } else if movies.isEmpty {
             diagnostic = "Aucune vidéo publiée dans les données Steam de ce jeu (ID \(appID))."
         } else {
-            diagnostic = "\(movies.count) vidéo(s) listée(s), mais aucune URL MP4 compatible (ID \(appID))."
+            diagnostic = "\(movies.count) vidéo(s) listée(s), mais aucune URL HLS H.264 ni MP4 utilisable (ID \(appID))."
         }
         return SteamPublicMedia(descriptionFR: french, videos: previews, diagnostic: diagnostic)
     }
