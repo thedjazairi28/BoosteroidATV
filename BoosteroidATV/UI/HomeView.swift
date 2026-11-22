@@ -414,6 +414,7 @@ struct LibraryView: View {
     @State private var searchText = ""
     @State private var sortOrder: LibrarySortOrder = .default
     @State private var carouselRequest: LibraryCarouselRequest?
+    @State private var queuedGameToPlay: GameInfo?
 
     private var filteredGames: [GameInfo] {
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -465,9 +466,21 @@ struct LibraryView: View {
             text: $searchText,
             prompt: Text(games.isEmpty ? "Chargement de la bibliothèque…" : "Rechercher parmi \(games.count) jeux")
         )
-        .fullScreenCover(item: $carouselRequest) { request in
-            LibraryCarouselView(request: request, onPlay: onPlay, onDismiss: { carouselRequest = nil })
-                .environment(viewModel)
+        .fullScreenCover(item: $carouselRequest, onDismiss: {
+            // Dismiss the moving card (and stop its trailer) before starting streaming.
+            guard let selected = queuedGameToPlay else { return }
+            queuedGameToPlay = nil
+            onPlay(selected)
+        }) { request in
+            LibraryCarouselView(
+                request: request,
+                onPlay: { selected in
+                    queuedGameToPlay = selected
+                    carouselRequest = nil
+                },
+                onDismiss: { carouselRequest = nil }
+            )
+            .environment(viewModel)
         }
     }
 
