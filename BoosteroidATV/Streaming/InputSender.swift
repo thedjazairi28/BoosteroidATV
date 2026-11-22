@@ -10,6 +10,8 @@ extension Notification.Name {
     /// A real gamepad button was pressed. StreamView uses this to leave its
     /// local Pointer mode while InputSender hides the Windows cursor.
     static let gamepadInputBegan = Notification.Name("BoosteroidATV.gamepadInputBegan")
+    /// Leave the virtual pointer when the player presses B / Circle.
+    static let gamepadPointerExitRequested = Notification.Name("BoosteroidATV.gamepadPointerExitRequested")
 }
 
 // MARK: - Input Event Handler
@@ -62,6 +64,15 @@ final class InputSender: InputEventHandler {
 
     /// Radial deadzone applied to analog stick axes (0.0–1.0).
     var deadzone: Float = 0.15
+
+    /// In Pointer mode, the right stick drives the local remote-desktop mouse.
+    /// Suppress gamepad packets in this mode so clicks cannot also trigger
+    /// the game's A / Cross action or move its camera.
+    private(set) var gamepadPointerModeEnabled = false
+    var gamepadPointerInteractionPaused = false
+    var gamepadPointerMovementHandler: ((CGFloat, CGFloat) -> Void)?
+    private var lastPointerAState: [ObjectIdentifier: Bool] = [:]
+    private var lastPointerBState: [ObjectIdentifier: Bool] = [:]
 
     // MARK: - Diagnostics (read by StreamController for the on-screen HUD)
     /// Number of extended gamepads currently seen by GameController.
@@ -196,6 +207,10 @@ final class InputSender: InputEventHandler {
     }
 
     func stop() {
+        gamepadPointerModeEnabled = false
+        gamepadPointerMovementHandler = nil
+        lastPointerAState.removeAll()
+        lastPointerBState.removeAll()
         controllerPollTask?.cancel()
         controllerPollTask = nil
         if let connectObserver { NotificationCenter.default.removeObserver(connectObserver) }
@@ -377,6 +392,68 @@ final class InputSender: InputEventHandler {
 
     // MARK: - Mouse
 
+    /// Switch controller routing without changing the normal gamepad behavior.
+    /// Explicitly neutralize any previously held buttons/axes to avoid stuck
+    /// movement in the cloud game when entering Pointer mode.
+    func setGamepadPointerMode(_ enabled: Bool) {
+        guard gamepadPointerModeEnabled != enabled else { return }
+        gamepadPointerModeEnabled = enabled
+        lastPointerAState.removeAll()
+        lastPointerBState.removeAll()
+        guard enabled else { return }
+
+        for controller in GCController.controllers() {
+            guard let pad = controller.extendedGamepad else { continue }
+            let key = ObjectIdentifier(controller)
+            lastPointerAState[key] = pad.buttonA.isPressed
+            lastPointerBState[key] = pad.buttonB.isPressed
+            guard let id = controllerIds[key] else { continue }
+
+            var buttons = lastButtonState[key] ?? [:]
+            for (index, pressed) in buttons where pressed {
+                Task { [controlChannel] in
+                    await controlChannel.send(type: "controller", action: "button",
+                                              fields: ["id": id, "button": index, "value": 0])
+                }
+                buttons[index] = false
+            }
+            lastButtonState[key] = buttons
+
+            var axes = lastAxisState[key] ?? [:]
+            for index in 0...5 {
+                let neutral = (index == 2 || index == 5) ? -Int(Self.maxAxis) : 0
+                if let previous = axes[index], previous != neutral {
+                    Task { [controlChannel] in
+                        await controlChannel.send(type: "controller", action: "axes",
+                                                  fields: ["id": id, "axes": index, "value": neutral])
+                    }
+                }
+                axes[index] = neutral
+            }
+            lastAxisState[key] = axes
+
+            if let hat = lastHat[key], hat != 0 {
+                Task { [controlChannel] in
+                    await controlChannel.send(type: "controller", action: "pad",
+                                              fields: ["id": id, "hat": 0])
+                }
+            }
+            lastHat[key] = 0
+        }
+    }
+
+    /// One ordered press/release task: two independent async tasks could
+    /// otherwise arrive at the remote PC in the wrong order.
+    private func clickMouseFromGamepad() {
+        Task { [controlChannel] in
+            await controlChannel.send(type: "mouse", action: "button",
+                                      fields: ["isPressed": true, "btn": 0])
+            try? await Task.sleep(for: .milliseconds(35))
+            await controlChannel.send(type: "mouse", action: "button",
+                                      fields: ["isPressed": false, "btn": 0])
+        }
+    }
+
     func setMouseMode(enabled: Bool, x: Int, y: Int) {
         let fx = surfaceWidth > 0 ? min(max(Double(x) / Double(surfaceWidth), 0), 1) : 0
         let fy = surfaceHeight > 0 ? min(max(Double(y) / Double(surfaceHeight), 0), 1) : 0
@@ -508,6 +585,8 @@ final class InputSender: InputEventHandler {
         lastAxisState.removeValue(forKey: key)
         lastHat.removeValue(forKey: key)
         lastPauseComboState.removeValue(forKey: key)
+        lastPointerAState.removeValue(forKey: key)
+        lastPointerBState.removeValue(forKey: key)
         if let haptics = hapticsByController.removeValue(forKey: key) { haptics.stop() }
         // Extended gamepads only, matching handleControllerConnected — this
         // count feeds the on-screen diagnostics, so counting the Siri Remote
@@ -553,6 +632,48 @@ final class InputSender: InputEventHandler {
 
     private func pollGamepad(controller: GCController, id: Int, pad: GCExtendedGamepad) {
         let key = ObjectIdentifier(controller)
+
+        if gamepadPointerModeEnabled {
+            // Keep the Start+Select toolbar shortcut available while in mouse
+            // mode. It is handled locally and not sent to the cloud game.
+            let combo = pad.buttonMenu.isPressed && (pad.buttonOptions?.isPressed ?? false)
+            if combo && !(lastPauseComboState[key] ?? false) {
+                NotificationCenter.default.post(name: .gamepadPauseComboPressed, object: nil)
+            }
+            lastPauseComboState[key] = combo
+
+            // SwiftUI must still receive controller buttons for the toolbar.
+            // Never generate a remote mouse click behind an open overlay.
+            guard !gamepadPointerInteractionPaused else { return }
+
+            let aPressed = pad.buttonA.isPressed
+            if aPressed && !(lastPointerAState[key] ?? false) {
+                clickMouseFromGamepad()
+            }
+            lastPointerAState[key] = aPressed
+
+            let bPressed = pad.buttonB.isPressed
+            if bPressed && !(lastPointerBState[key] ?? false) {
+                NotificationCenter.default.post(name: .gamepadPointerExitRequested, object: nil)
+            }
+            lastPointerBState[key] = bPressed
+            guard gamepadPointerModeEnabled else { return }
+
+            // Right-stick speed is progressive: precision near centre, faster
+            // travel at full deflection. GCExtendedGamepad Y+ is UP.
+            let x = pad.rightThumbstick.xAxis.value
+            let y = pad.rightThumbstick.yAxis.value
+            let speedX = max(8.0, Float(surfaceWidth) / 140.0)
+            let speedY = max(8.0, Float(surfaceHeight) / 105.0)
+            let dx: CGFloat = abs(x) > 0.17
+                ? CGFloat(x * abs(x) * speedX) : 0
+            let dy: CGFloat = abs(y) > 0.17
+                ? CGFloat(-y * abs(y) * speedY) : 0
+            if dx != 0 || dy != 0 {
+                gamepadPointerMovementHandler?(dx, dy)
+            }
+            return
+        }
 
         // Buttons 0-9 — CONFIRMED indices, see BoosteroidControlChannel.
         // Button 7 (Menu/Start): CONFIRMED 2026-08-09 on a real device that
