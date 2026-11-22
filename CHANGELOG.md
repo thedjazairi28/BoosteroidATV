@@ -14,16 +14,16 @@
 | Base d'origine | `main` | `623c42b` | Version amont disponible | **Testée** : installation et streaming sur Apple TV |
 | V1 — Catalogue unifié | `feature/unified-catalog-v1` | `a788071` | **Réussie** le 20/11/2026 | **Non confirmé** |
 | V2 — Smart Experience | `feature/v2-smart-experience` | `fd60053` | **Réussie** le 20/11/2026 | **Non confirmé** |
-| V2.2 — Filtres multiples (expérimental) | `feature/v2.2-multi-store-filters` | `19d7fd4` | **GitHub Actions en cours** le 22/11/2026 | **Non testé sur Apple TV** |
+| V2.2 — Filtres et fiches enrichies, interface FR (expérimental) | `feature/v2.2-multi-store-filters` | [branche V2.2](https://github.com/thedjazairi28/BoosteroidATV/tree/feature/v2.2-multi-store-filters) | **Compilation finale en cours** le 22/11/2026 | **Non testé sur Apple TV** |
 | V2.1 — Stability | `feature/v2.1-stability` | `17df76b` | **Réussie** le 20/11/2026 | **3 OK, 3 KO** — 22/11/2026 (ligne rouge disparue, origine inconnue) |
 
 **Important :** V2 inclut V1, V2.1 inclut V1 + V2, et V2.2 part de V2.1. La branche `main` conserve le code de base : **aucune des branches expérimentales n'est fusionnée dans `main`** à la date de ce journal.
 
-## 22 novembre 2026 — V2.2 « Filtres multiples » (développement)
+## 22 novembre 2026 — V2.2 « Filtres multiples, fiches de jeux et français » (développement)
 
 **Branche :** [feature/v2.2-multi-store-filters](https://github.com/thedjazairi28/BoosteroidATV/tree/feature/v2.2-multi-store-filters)  
 **Comparaison avec V2.1 :** [diff V2.1 → V2.2](https://github.com/thedjazairi28/BoosteroidATV/compare/feature/v2.1-stability...feature/v2.2-multi-store-filters)  
-**Compilation :** [GitHub Actions #45020911625](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45020911625) — **en cours lors de la mise à jour du journal**  
+**Compilation :** [premier build des filtres #45020911625](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45020911625) — **réussi** ; [nouveau build de l'ensemble des changements #45021265100](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45021265100) — **en cours à la rédaction**.  
 **Tests tvOS :** non effectués sur cette version.
 
 ### Ajouté
@@ -35,8 +35,27 @@
 - La recherche par nom reste active et se combine aux boutiques cochées, sans nouvel appel réseau au changement de filtre.
 - Si aucune boutique n'est cochée, un message explicite est affiché au lieu de prétendre qu'il n'existe aucun résultat.
 
+### Fiche de jeu enrichie
+
+- Ajout d'une section **« À propos du jeu »** dans les fiches, ainsi que dans le carrousel de la bibliothèque.
+- Affichage du résumé **réel fourni par les métadonnées Boosteroid**, s'il existe. À défaut, message honnête indiquant qu'aucun résumé détaillé n'est disponible.
+- Ajout ou meilleure visibilité des **genres, boutiques, développeur, éditeur et classification**, selon les champs disponibles.
+- Bouton **« Détails du jeu »** dans le bandeau d'accueil pour ouvrir la fiche plutôt que lancer immédiatement un jeu.
+- Traduction française des principaux intitulés de genres courants.
+
+### Interface en français
+
+- Traduction des **libellés de l'accueil, de la bibliothèque, de la connexion, des paramètres et des commandes de streaming**.
+- Réécriture de la page **Aide** en français, y compris l'explication du mode pointeur avec la Siri Remote.
+- Traduction des principaux messages d'erreur d'authentification et des états de préparation visibles.
+- **Limite de périmètre :** les noms de jeux, les résumés d'origine renvoyés par Boosteroid (éventuellement en anglais), les noms de boutiques et l'interface du PC distant (Steam / lanceurs / jeux) ne sont **pas traduits automatiquement**. Aucune API de traduction externe n'a été ajoutée.
+
+
 ### Limitations et validation nécessaire
 
+- Vérifier l'ouverture des nouvelles fiches de jeu, les résumés et le rendu sans débordement sur Apple TV.
+- Vérifier les libellés et la navigation en français sur les écrans d'accueil, bibliothèque, connexion, aide, streaming et paramètres.
+- Les résumés fournis par Boosteroid peuvent être absents ou rédigés en anglais. **Pas d'invention ni de traduction automatique de ces textes.**
 - Le rattachement à une boutique dépend des métadonnées Boosteroid, avec des correspondances textuelles comme en V2.1 ; les jeux mal renseignés peuvent apparaître dans « Autres ».
 - **Aucune confirmation de bon fonctionnement sur Apple TV** tant qu'un IPA V2.2 n'a pas été compilé, installé et testé.
 - Cette version **ne corrige pas** les trois tests KO de V2.1 : enregistrement des comptes, saisie iPhone, accès aux paramètres de streaming.
