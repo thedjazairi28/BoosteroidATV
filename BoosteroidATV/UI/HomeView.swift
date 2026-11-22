@@ -53,11 +53,16 @@ struct HomeView: View {
                     .shadow(radius: 5)
                     .lineLimit(1)
                 Button { onPlay(game) } label: {
-                    Label("Play", systemImage: "play.fill")
+                    Label("Jouer", systemImage: "play.fill")
                         .frame(minWidth: 120)
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(BoosteroidTheme.violet)
+                Button { onShowDetails(game) } label: {
+                    Label("Détails du jeu", systemImage: "info.circle")
+                }
+                .buttonStyle(.bordered)
+                .tint(.gray)
             }
             .padding(40)
         }
@@ -66,11 +71,11 @@ struct HomeView: View {
 
     private var favoritesShelf: some View {
         VStack(alignment: .leading, spacing: 20) {
-            Text("Favorites")
+            Text("Favoris")
                 .font(.largeTitle.weight(.bold))
                 .foregroundStyle(.white)
             if favoriteGames.isEmpty {
-                Label("Favorite games from the Library to see them here.", systemImage: "star")
+                Label("Ajoute des jeux aux favoris depuis la bibliothèque pour les retrouver ici.", systemImage: "star")
                     .font(.title3)
                     .foregroundStyle(.secondary)
                     .padding(.vertical, 42)
@@ -99,7 +104,7 @@ struct HomeView: View {
         VStack(spacing: 22) {
             ProgressView()
                 .controlSize(.large)
-            Text("Loading your Boosteroid library…")
+            Text("Chargement de votre bibliothèque Boosteroid…")
                 .font(.title3)
                 .foregroundStyle(.secondary)
         }
@@ -107,11 +112,11 @@ struct HomeView: View {
 
     private var emptyView: some View {
         ContentUnavailableView {
-            Label("No games yet", systemImage: "gamecontroller")
+            Label("Aucun jeu pour le moment", systemImage: "gamecontroller")
         } description: {
-            Text(error ?? "Install a game in Boosteroid, then choose Refresh.")
+            Text(error ?? "Ajoute un jeu dans Boosteroid, puis sélectionne Actualiser.")
         } actions: {
-            Button("Refresh") { Task { await onRefresh() } }
+            Button("Actualiser") { Task { await onRefresh() } }
                 .buttonStyle(.borderedProminent)
         }
     }
@@ -181,6 +186,29 @@ struct GameOverviewView: View {
                         .font(.title3.weight(.semibold))
                         .foregroundStyle(game.requiresInstallation ? .orange : BoosteroidTheme.accent)
 
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("À propos du jeu")
+                                .font(.title2.weight(.semibold))
+                            Text(GameDetailsFR.summary(for: game))
+                                .font(.system(size: 24))
+                                .foregroundStyle(.white.opacity(0.9))
+                                .lineLimit(5)
+                                .fixedSize(horizontal: false, vertical: true)
+                            if !game.genres.isEmpty {
+                                Text("Genres : " + GameDetailsFR.genres(for: game))
+                                    .font(.callout)
+                                    .foregroundStyle(.white.opacity(0.8))
+                                    .lineLimit(2)
+                            }
+                            if !game.storeIdentifiers.isEmpty {
+                                Text("Boutiques : " + GameDetailsFR.stores(for: game))
+                                    .font(.callout)
+                                    .foregroundStyle(.white.opacity(0.8))
+                                    .lineLimit(2)
+                            }
+                        }
+                        .frame(maxWidth: 800, alignment: .leading)
+
                         HStack(spacing: 16) {
                             Button(action: onPlay) {
                                 Label(
@@ -193,7 +221,7 @@ struct GameOverviewView: View {
                             .tint(BoosteroidTheme.violet)
 
                             Button(action: onToggleFavorite) {
-                                Label(isFavorite ? "Remove from Favorites" : "Add to Favorites",
+                                Label(isFavorite ? "Retirer des favoris" : "Ajouter aux favoris",
                                       systemImage: isFavorite ? "star.fill" : "star")
                             }
                             .buttonStyle(.bordered)
@@ -207,7 +235,7 @@ struct GameOverviewView: View {
                         Text("BOOSTEROID")
                             .font(.caption.weight(.bold))
                             .foregroundStyle(.secondary)
-                        Text("Cloud Gaming")
+                        Text("Jeu en streaming")
                             .font(.title3)
                             .foregroundStyle(.white)
                     }
@@ -234,6 +262,50 @@ struct GameOverviewView: View {
             }
         } else {
             BoosteroidTheme.cardGradient
+        }
+    }
+}
+
+private enum GameDetailsFR {
+    /// Preserve editorial text from Boosteroid; do not invent a synopsis when the API has none.
+    static func summary(for game: GameInfo) -> String {
+        let source = game.summary?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return source.isEmpty ? "Aucun résumé détaillé n'est fourni par Boosteroid pour ce jeu." : source
+    }
+
+    static func genres(for game: GameInfo) -> String {
+        game.genres.prefix(6).map(genre).joined(separator: " · ")
+    }
+
+    static func stores(for game: GameInfo) -> String {
+        game.storeIdentifiers.map { key in
+            let value = key.lowercased()
+            if value.contains("steam") { return "Steam" }
+            if value.contains("xbox") || value.contains("microsoft") { return "Xbox" }
+            if value.contains("epic") { return "Epic Games" }
+            return key
+        }.joined(separator: " · ")
+    }
+
+    static func genre(_ value: String) -> String {
+        switch value.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() {
+        case "action": return "Action"
+        case "adventure": return "Aventure"
+        case "role-playing", "role playing", "rpg": return "Jeu de rôle"
+        case "strategy": return "Stratégie"
+        case "simulation": return "Simulation"
+        case "racing": return "Course"
+        case "sports", "sport": return "Sport"
+        case "shooter", "first-person shooter", "fps": return "Jeu de tir"
+        case "fighting": return "Combat"
+        case "puzzle": return "Réflexion"
+        case "survival": return "Survie"
+        case "horror": return "Horreur"
+        case "multiplayer": return "Multijoueur"
+        case "indie": return "Indépendant"
+        case "platformer": return "Plateforme"
+        case "open world": return "Monde ouvert"
+        default: return value
         }
     }
 }
@@ -295,7 +367,7 @@ struct LibraryView: View {
         }
         .searchable(
             text: $searchText,
-            prompt: Text(games.isEmpty ? "Loading library…" : "Search \(games.count) games")
+            prompt: Text(games.isEmpty ? "Chargement de la bibliothèque…" : "Rechercher parmi \(games.count) jeux")
         )
         .fullScreenCover(item: $carouselRequest) { request in
             LibraryCarouselView(request: request, onPlay: onPlay, onDismiss: { carouselRequest = nil })
@@ -305,8 +377,8 @@ struct LibraryView: View {
 
     private var libraryHeader: some View {
         HStack(spacing: 18) {
-            Text("Library").font(.largeTitle.weight(.bold))
-            Text("\(filteredGames.count) of \(games.count) games").foregroundStyle(.secondary)
+            Text("Bibliothèque").font(.largeTitle.weight(.bold))
+            Text("\(filteredGames.count) jeux sur \(games.count)").foregroundStyle(.secondary)
             Spacer()
             Menu {
                 ForEach(LibrarySortOrder.allCases, id: \.self) { order in
@@ -317,7 +389,7 @@ struct LibraryView: View {
                     }
                 }
             } label: {
-                Label("Sort: \(sortOrder.rawValue)", systemImage: "arrow.up.arrow.down")
+                Label("Trier : \(sortOrder.rawValue)", systemImage: "arrow.up.arrow.down")
             }
             .buttonStyle(.bordered)
             .tint(.gray)
@@ -326,10 +398,10 @@ struct LibraryView: View {
 }
 
 private enum LibrarySortOrder: String, CaseIterable {
-    case `default` = "Default"
+    case `default` = "Par défaut"
     case titleAZ = "A → Z"
     case titleZA = "Z → A"
-    case recentFirst = "Recently Played"
+    case recentFirst = "Joué récemment"
 }
 
 private struct LibraryCarouselRequest: Identifiable {
@@ -458,30 +530,36 @@ private struct LibraryCarouselView: View {
                 VStack(alignment: .leading, spacing: 14) {
                     Text(game.title).font(.system(size: 58, weight: .bold)).lineLimit(2)
                     if !game.genres.isEmpty {
-                        Text(game.genres.prefix(6).joined(separator: "  ·  "))
-                            .font(.system(size: 30))
+                        Text(GameDetailsFR.genres(for: game))
+                            .font(.system(size: 27))
+                            .foregroundStyle(.white.opacity(0.75))
+                            .lineLimit(2)
+                    }
+                    Text("À propos du jeu")
+                        .font(.system(size: 23, weight: .semibold))
+                    Text(GameDetailsFR.summary(for: game))
+                        .font(.system(size: 27))
+                        .foregroundStyle(.white.opacity(0.82))
+                        .lineLimit(4)
+                        .frame(maxWidth: 810, alignment: .leading)
+                    if !game.storeIdentifiers.isEmpty {
+                        Text("Boutiques : " + GameDetailsFR.stores(for: game))
+                            .font(.system(size: 21))
                             .foregroundStyle(.white.opacity(0.75))
                     }
-                    if let summary = game.summary {
-                        Text(summary)
-                            .font(.system(size: 28))
-                            .foregroundStyle(.white.opacity(0.82))
-                            .lineLimit(3)
-                            .frame(maxWidth: 700, alignment: .leading)
-                    }
-                    Label("In Library", systemImage: "checkmark.circle.fill")
+                    Label("Dans ma bibliothèque", systemImage: "checkmark.circle.fill")
                         .font(.system(size: 28, weight: .semibold))
                         .foregroundStyle(BoosteroidTheme.accent)
                     HStack(spacing: 16) {
                         Button { onPlay(game) } label: {
-                            Label("Play", systemImage: "play.fill")
+                            Label("Jouer", systemImage: "play.fill")
                                 .font(.system(size: 28, weight: .medium))
                                 .frame(minWidth: 110)
                         }
                             .buttonStyle(.borderedProminent).tint(BoosteroidTheme.violet)
                             .focused($actionFocus, equals: .play)
                         Button { viewModel.toggleFavorite(game) } label: {
-                            Label(viewModel.isFavorite(game) ? "Remove from Favorites" : "Add to Favorites",
+                            Label(viewModel.isFavorite(game) ? "Retirer des favoris" : "Ajouter aux favoris",
                                   systemImage: viewModel.isFavorite(game) ? "star.fill" : "star")
                                 .font(.system(size: 28, weight: .medium))
                         }
@@ -491,9 +569,9 @@ private struct LibraryCarouselView: View {
                 }
                 Spacer()
                 VStack(alignment: .trailing, spacing: 20) {
-                    metadata("DEVELOPER", game.developer)
-                    metadata("PUBLISHER", game.publisher)
-                    metadata("RATING", game.rating)
+                    metadata("DÉVELOPPEUR", game.developer)
+                    metadata("ÉDITEUR", game.publisher)
+                    metadata("CLASSIFICATION", game.rating)
                 }
             }.padding(80)
         }
