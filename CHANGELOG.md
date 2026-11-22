@@ -1,0 +1,129 @@
+# Journal des mises à jour — BoosteroidATV (fork personnel)
+
+**Dépôt :** [thedjazairi28/BoosteroidATV](https://github.com/thedjazairi28/BoosteroidATV)  
+**Dernière mise à jour de ce journal :** 22 novembre 2026  
+**Projet d'origine :** [luizhdramos/BoosteroidATV](https://github.com/luizhdramos/BoosteroidATV)  
+**Statut :** fork expérimental ; les builds GitHub Actions ne constituent pas une validation fonctionnelle sur Apple TV.
+
+> Ce document suit les modifications **propres au fork**, leurs versions, les compilations, les tests terrain et les problèmes restant à résoudre. Il ne prétend pas que chaque fonction compilée a été testée sur un appareil.
+
+## État des versions
+
+| Version de travail | Branche | Révision | Compilation | Essais Apple TV |
+| --- | --- | --- | --- | --- |
+| Base d'origine | `main` | `623c42b` | Version amont disponible | **Testée** : installation et streaming sur Apple TV |
+| V1 — Catalogue unifié | `feature/unified-catalog-v1` | `a788071` | **Réussie** le 20/11/2026 | **Non confirmé** |
+| V2 — Smart Experience | `feature/v2-smart-experience` | `fd60053` | **Réussie** le 20/11/2026 | **Non confirmé** |
+| V2.1 — Stability | `feature/v2.1-stability` | `17df76b` | **Réussie** le 20/11/2026 | **Non confirmé** |
+
+**Important :** les fonctionnalités V1 sont incluses dans V2, et celles de V1 + V2 sont incluses dans V2.1. La branche `main` reste sur la base d'origine : **aucune des trois branches expérimentales n'est fusionnée dans `main`** à la date de ce journal.
+
+## 20 novembre 2026 — V2.1 « Stability »
+
+**Branche :** [feature/v2.1-stability](https://github.com/thedjazairi28/BoosteroidATV/tree/feature/v2.1-stability)  
+**Comparaison avec V2 :** [diff V2 → V2.1](https://github.com/thedjazairi28/BoosteroidATV/compare/feature/v2-smart-experience...feature/v2.1-stability)  
+**Build :** [GitHub Actions #44839880457](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/44839880457) — **succès**
+
+### Modifications
+
+- Réduction du risque de limitation **HTTP 429** : limitation du rythme des requêtes au catalogue, nombre de pages et collections plafonné, temporisation et quelques nouvelles tentatives bornées.
+- Chargement du catalogue différé jusqu'à la fin du chargement initial de la bibliothèque ; délai de **5 minutes** entre deux tentatives de scan, y compris après un clic sur Actualiser.
+- Conservation des jeux déjà chargés en cas d'échec du rafraîchissement et messages d'erreur plus lisibles.
+- Ajout d'un onglet **« Comptes »** directement accessible ; ajustement de son comportement de fermeture.
+- Traduction en français de plusieurs onglets, paramètres de streaming, messages et niveaux d'intensité des vibrations.
+- Mise à jour du workflow GitHub Actions pour compiler cette branche et produire son IPA non signé.
+
+### Limites / état
+
+- **Compilation réussie ≠ fonctionnement validé** : ces modifications doivent encore être vérifiées sur l'Apple TV.
+- Le catalogue n'est pas garanti exhaustif ; la protection contre les 429 limite volontairement le volume des recherches.
+
+## 20 novembre 2026 — V2 « Smart Experience »
+
+**Branche :** [feature/v2-smart-experience](https://github.com/thedjazairi28/BoosteroidATV/tree/feature/v2-smart-experience)  
+**Comparaison avec V1 :** [diff V1 → V2](https://github.com/thedjazairi28/BoosteroidATV/compare/feature/unified-catalog-v1...feature/v2-smart-experience)  
+**Build :** [GitHub Actions #44836464798](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/44836464798) — **succès**
+
+### Ajouts
+
+- Gestion locale des comptes de jeux **Rockstar, Steam, Epic Games et Xbox**.
+- Stockage local des identifiants dans le **Keychain de l'Apple TV**, avec possibilité de supprimer un compte enregistré.
+- Panneau d'envoi manuel de l'identifiant ou du mot de passe vers le champ déjà sélectionné dans le PC distant.
+- Option **« Profil automatique par jeu »** : choix conservateur entre réactivité, qualité et équilibré selon les métadonnées du jeu.
+- Pour les jeux classés compétitifs, possibilité de ramener une demande de résolution 1440p/4K à **1080p** et d'utiliser le débit automatique ; les FPS et codecs ne sont pas augmentés artificiellement.
+- Ajouts liés à l'affichage / au suivi des diagnostics du streaming.
+
+### Limites
+
+- **Pas d'auto-login transparent** : il faut sélectionner le champ distant puis déclencher explicitement l'envoi de l'identifiant ou du mot de passe.
+- L'envoi de texte est limité aux **caractères ASCII** dans l'implémentation actuelle ; MFA/captcha ne sont pas automatisés.
+- Le stockage Keychain protège les données au niveau local, mais la fonction ne vaut pas un gestionnaire de mots de passe avec déverrouillage biométrique.
+- L'optimisation dite « intelligente » ajuste la **demande de flux**, pas le GPU du serveur Boosteroid ni la qualité du réseau domestique.
+
+## 20 novembre 2026 — V1 « Catalogue unifié »
+
+**Branche :** [feature/unified-catalog-v1](https://github.com/thedjazairi28/BoosteroidATV/tree/feature/unified-catalog-v1)  
+**Comparaison avec la base :** [diff main → V1](https://github.com/thedjazairi28/BoosteroidATV/compare/main...feature/unified-catalog-v1)  
+**Build :** [GitHub Actions #44825820586](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/44825820586) — **succès**
+
+### Ajouts
+
+- Vue **« Catalogue »** regroupant les jeux récupérables depuis les collections Boosteroid prises en charge et la bibliothèque de l'utilisateur.
+- **Recherche** par titre et filtres par boutique : **Tous, Steam, Xbox, Epic Games**.
+- Fiches de jeu indiquant « prêt à jouer » ou « installer et jouer » selon les métadonnées disponibles.
+- Champ de **saisie de texte native tvOS**, pouvant utiliser le clavier de l'iPhone via l'application Télécommande Apple TV.
+- Envoi du texte saisi au PC distant et gestion améliorée de certains caractères nécessitant **Shift** (dont `@`).
+- Navigation entre les onglets avec **LB/RB** d'une manette compatible.
+- Workflow GitHub Actions produisant un **IPA non signé** utilisable dans un outil de sideload.
+
+### Limites
+
+- Le « catalogue unifié » repose sur des collections et API observées ; il **ne garantit pas** de représenter l'intégralité du catalogue commercial Boosteroid.
+- Le filtrage par boutique repose en partie sur les métadonnées / intitulés disponibles et peut être imparfait.
+- La saisie de texte ne constitue pas une prise en charge universelle de tous les caractères Unicode.
+
+## Tests terrain déjà effectués — application de base
+
+Ces essais concernent l'application BoosteroidATV installée **avant validation des branches V1/V2/V2.1**, sauf indication contraire.
+
+- **Fedora 44** : Docker installé et opérationnel (test `hello-world` réussi), Avahi fonctionnel.
+- **atvloadly** : interface web accessible sur Fedora ; appairage avec l'Apple TV réussi.
+- **Installation tvOS** : signature / installation de l'IPA réussie via atvloadly (« installation succeeded »).
+- **Streaming Boosteroid** : démarrage d'une session et accès à l'interface Steam observés.
+- **Navigation dans Steam** : le mode « Pointer » fonctionne avec la **surface tactile de la Siri Remote** et un clic central, pas avec le stick de la manette Xbox.
+- **Anomalie observée** : **fine ligne rouge en bas du flux vidéo**. Origine et correction **non déterminées**. Ne pas présenter V2.1 comme un correctif de ce défaut.
+
+## Fichiers compilés et récupération
+
+Les téléchargements GitHub Actions se trouvent dans la rubrique **Artifacts** de chaque exécution. Ils sont fournis sous forme d'archives ZIP contenant un IPA **non signé**.
+
+| Version | Artifact | Exécution |
+| --- | --- | --- |
+| V1 | `BoosteroidATV-unified-catalog-unsigned` | [#44825820586](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/44825820586) |
+| V2 | `BoosteroidATV-v2-unsigned` | [#44836464798](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/44836464798) |
+| V2.1 | `BoosteroidATV-v2-1-stability-unsigned` | [#44839880457](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/44839880457) |
+
+**Expiration annoncée par GitHub : 27 novembre 2026.** Après expiration, relancer un build ou publier un fichier dans **Releases** pour disposer d'un téléchargement plus durable. Aucun Release propre à ce fork n'a été trouvé lors de la rédaction.
+
+## À faire / à valider
+
+- [ ] Installer l'IPA **V2.1** sur l'Apple TV et confirmer le démarrage de l'application.
+- [ ] Vérifier les onglets Catalogue / Bibliothèque / Comptes et la navigation LB/RB.
+- [ ] Vérifier la saisie depuis l'iPhone et l'envoi de caractères spéciaux.
+- [ ] Tester manuellement l'envoi d'identifiants, sans publier d'identifiants ou de secrets dans GitHub.
+- [ ] Tester la protection HTTP 429 et la stabilité du catalogue au fil des sessions.
+- [ ] Mesurer la latence et le comportement des profils de streaming ; ne pas attribuer d'amélioration sans mesure.
+- [ ] Identifier la cause de la **ligne rouge en bas de l'image** et créer une correction dédiée si le problème vient de l'application.
+- [ ] Publier une version validée dans **GitHub Releases** (IPA non signé) avec des notes de version permanentes.
+
+## Convention pour les prochaines modifications
+
+À chaque nouvelle version, **ajouter une section en haut** de ce document avec :
+
+1. **Date, nom de version, branche, commit et lien de comparaison**.
+2. **Ajouté / Modifié / Corrigé / Retiré** : uniquement les changements visibles dans le code ou les commits.
+3. **Compilation** : succès, échec ou non exécutée, avec lien vers le build.
+4. **Validation sur Apple TV** : testé, non testé ou problème reproduit.
+5. **Limitations et régressions connues**, ainsi que le lien vers le téléchargement si disponible.
+
+**Ne jamais confondre « code ajouté », « build réussi » et « testé en conditions réelles ».**
