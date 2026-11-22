@@ -305,7 +305,7 @@ struct GameOverviewView: View {
 
 
 // MARK: - Automatic silent video backdrop
-// Plays publicly accessible Steam MP4 trailers directly; no YouTube or Twitch login.
+// Plays publicly accessible Steam H.264 HLS or legacy MP4 trailers; no YouTube login.
 // AVPlayerLayer has no visible player controls and is non-interactive.
 
 private struct SilentGameVideoBackground: UIViewRepresentable {
@@ -327,11 +327,12 @@ private struct SilentGameVideoBackground: UIViewRepresentable {
     }
 }
 
+
 private final class SilentGameVideoSurface: UIView {
     override class var layerClass: AnyClass { AVPlayerLayer.self }
 
     private var activeURL: URL?
-    private var player: AVQueuePlayer?
+    private var player: AVPlayer?
     private var looper: AVPlayerLooper?
     private var playerStatusObservation: NSKeyValueObservation?
     private var onError: ((String) -> Void)?
@@ -358,29 +359,57 @@ private final class SilentGameVideoSurface: UIView {
         self.onError = onError
         activeURL = url
 
-        let queue = AVQueuePlayer()
-        queue.isMuted = true
-        queue.volume = 0
-        queue.actionAtItemEnd = .none
-        looper = AVPlayerLooper(player: queue, templateItem: AVPlayerItem(url: url))
-        player = queue
-        videoLayer.player = queue
-        playerStatusObservation = queue.observe(\.status, options: [.new]) { [weak self] observed, _ in
+        let activePlayer: AVPlayer
+        if url.path.lowercased().hasSuffix(".m3u8") {
+            // HLS is supported natively by AVFoundation on tvOS.
+            // Avoid AVPlayerLooper on HLS: it creates redundant stream
+            // requests and can cause unnecessary buffering/downloads.
+            let item = AVPlayerItem(url: url)
+            let hlsPlayer = AVPlayer(playerItem: item)
+            hlsPlayer.actionAtItemEnd = .pause
+            NotificationCenter.default.addObserver(
+                self,
+                selector: #selector(replayHLS(_:)),
+                name: .AVPlayerItemDidPlayToEndTime,
+                object: item
+            )
+            activePlayer = hlsPlayer
+        } else {
+            // Legacy MP4: standard queue-based looping remains supported.
+            let queue = AVQueuePlayer()
+            queue.actionAtItemEnd = .none
+            looper = AVPlayerLooper(player: queue, templateItem: AVPlayerItem(url: url))
+            activePlayer = queue
+        }
+
+        activePlayer.isMuted = true
+        activePlayer.volume = 0
+        player = activePlayer
+        videoLayer.player = activePlayer
+        playerStatusObservation = activePlayer.observe(\.status, options: [.new]) { [weak self] observed, _ in
             guard observed.status == .failed else { return }
             let detail = observed.error?.localizedDescription ?? "Erreur de décodage ou d'accès au média."
             DispatchQueue.main.async { [weak self] in
-                self?.onError?("La vidéo a été trouvée, mais le lecteur tvOS a échoué : " + detail)
+                self?.onError?("La vidéo est trouvée mais la lecture tvOS échoue : " + detail)
             }
         }
-        queue.play()
+        activePlayer.play()
+    }
+
+    @objc private func replayHLS(_ note: Notification) {
+        guard let currentItem = player?.currentItem, note.object as? AVPlayerItem === currentItem,
+              activeURL?.path.lowercased().hasSuffix(".m3u8") == true else { return }
+        player?.seek(to: .zero) { [weak self] finished in
+            if finished { self?.player?.play() }
+        }
     }
 
     func stop() {
+        NotificationCenter.default.removeObserver(self, name: .AVPlayerItemDidPlayToEndTime, object: nil)
         playerStatusObservation?.invalidate()
         playerStatusObservation = nil
         player?.pause()
         looper?.disableLooping()
-        // AVPlayerLooper owns the queue while active: do not manipulate its items.
         videoLayer.player = nil
         looper = nil
         player = nil
@@ -389,8 +418,8 @@ private final class SilentGameVideoSurface: UIView {
     }
 
     deinit {
-        // No playback should survive leaving the detail view.
         player?.pause()
+        NotificationCenter.default.removeObserver(self)
     }
 }
 
