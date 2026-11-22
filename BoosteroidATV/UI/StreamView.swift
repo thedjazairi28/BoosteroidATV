@@ -1,4 +1,112 @@
 import SwiftUI
+import Observation
+
+/// Diagnostic journal intentionally restricted to *application-defined* events.
+/// Never store raw HTTP responses, URLs, cookies, JWTs, usernames or passwords.
+/// The last 80 entries survive a tvOS process restart for post-crash inspection.
+@MainActor
+@Observable
+final class LaunchTrace {
+    struct Entry: Codable, Identifiable {
+        let id: UUID
+        let time: Date
+        let level: String
+        let message: String
+    }
+
+    static let shared = LaunchTrace()
+    private static let storageKey = "boosteroid.launch.safeTrace.v1"
+    private(set) var entries: [Entry]
+
+    private init() {
+        if let data = UserDefaults.standard.data(forKey: Self.storageKey),
+           let decoded = try? JSONDecoder().decode([Entry].self, from: data) {
+            entries = Array(decoded.suffix(80))
+        } else {
+            entries = []
+        }
+    }
+
+    /// Only pass short, manually authored strings. Never forward service
+    /// error.localizedDescription: it may contain sensitive URL query strings.
+    func record(_ message: String, level: String = "INFO") {
+        guard !message.isEmpty else { return }
+        if let last = entries.last, last.message == message, last.level == level { return }
+        entries.append(Entry(id: UUID(), time: Date(), level: level, message: String(message.prefix(135))))
+        if entries.count > 80 { entries.removeFirst(entries.count - 80) }
+        persist()
+    }
+
+    func clear() {
+        entries = []
+        UserDefaults.standard.removeObject(forKey: Self.storageKey)
+    }
+
+    private func persist() {
+        guard let data = try? JSONEncoder().encode(entries) else { return }
+        UserDefaults.standard.set(data, forKey: Self.storageKey)
+        // Opt-in diagnostic writes are sparse; flush crucial milestones so
+        // most entries are available after a sudden process termination.
+        UserDefaults.standard.synchronize()
+    }
+
+    static func stageName(_ raw: String) -> String? {
+        let stage = raw.lowercased()
+        if stage.contains("fetching ice") { return "WebRTC : recherche des serveurs ICE" }
+        if stage.contains("getparams") || stage.contains("fetching stream parameters") {
+            return "WebRTC : négociation des paramètres"
+        }
+        if stage.contains("offer") && stage.contains("accepted") {
+            return "WebRTC : offre acceptée, attente des images"
+        }
+        if stage.contains("offer") { return "WebRTC : création / échange de l'offre" }
+        if stage.contains("waiting for") && stage.contains("video") {
+            return "WebRTC : attente des images"
+        }
+        if stage.contains("control channel") || stage.contains("control socket") {
+            return "Ouverture du canal de commandes"
+        }
+        if stage.contains("starting video") { return "Initialisation du flux vidéo" }
+        return nil
+    }
+}
+
+/// A passive, intentionally compact overlay; all navigation continues to the
+/// underlying launch/game UI. No source-level URLs or authentication tokens.
+private struct LiveTraceOverlay: View {
+    @State private var trace = LaunchTrace.shared
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 7) {
+            Label("JOURNAL DE LANCEMENT", systemImage: "waveform.path.ecg")
+                .font(.system(size: 16, weight: .bold, design: .monospaced))
+                .foregroundStyle(.green)
+            ForEach(Array(trace.entries.suffix(9))) { entry in
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text(entry.time, format: .dateTime.hour().minute().second())
+                        .foregroundStyle(.gray)
+                    Text(entry.level)
+                        .foregroundStyle(entry.level == "ERREUR" ? .red : entry.level == "OK" ? .green : .yellow)
+                    Text(entry.message)
+                        .foregroundStyle(.white)
+                        .lineLimit(2)
+                }
+                .font(.system(size: 13, weight: .medium, design: .monospaced))
+            }
+            if trace.entries.isEmpty {
+                Text("Aucun événement enregistré")
+                    .foregroundStyle(.gray)
+            }
+        }
+        .padding(14)
+        .frame(width: 570, alignment: .leading)
+        .background(.black.opacity(0.89), in: RoundedRectangle(cornerRadius: 12))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(.green.opacity(0.35), lineWidth: 1))
+        .allowsHitTesting(false)
+        .accessibilityLabel("Journal de diagnostic")
+    }
+}
+
 
 /// Matches the compact 54-point settings choices and replaces tvOS's
 /// oversized default focused button capsule in the in-game toolbar.
@@ -117,6 +225,8 @@ struct StreamView: View {
     @State private var isDisconnecting = false
     @AppStorage("boosteroid.launch.lastCheckpoint") private var lastLaunchCheckpoint = "Aucune tentative enregistrée"
     @AppStorage("boosteroid.launch.inProgress") private var launchInProgress = false
+    @AppStorage("boosteroid.launch.showLiveLog") private var showLiveLog = true
+    @State private var trace = LaunchTrace.shared
 
     var body: some View {
         ZStack {
@@ -240,20 +350,65 @@ struct StreamView: View {
             case .failed(let message):
                 statusView(title: "Échec du streaming", message: message)
             }
+            // This is shown during queueing, WebRTC setup, gameplay and error
+            // states; it does not intercept remote-control/gamepad input.
+            if showLiveLog {
+                VStack {
+                    HStack {
+                        Spacer()
+                        LiveTraceOverlay()
+                    }
+                    Spacer()
+                }
+                .padding(.top, 24)
+                .padding(.trailing, 36)
+                .allowsHitTesting(false)
+            }
         }
         .task { await start() }
         .onChange(of: controller.state) { _, newState in
             switch newState {
             case .streaming:
                 lastLaunchCheckpoint = "Flux WebRTC actif"
+                trace.record("Flux vidéo reçu : lecture active", level: "OK")
             case .failed:
                 lastLaunchCheckpoint = "Échec du streaming (application ouverte)"
+                trace.record("Échec de l'initialisation du streaming", level: "ERREUR")
                 launchInProgress = false
             case .disconnected:
                 lastLaunchCheckpoint = "Session déconnectée"
+                trace.record("Déconnexion du streaming", level: "INFO")
                 launchInProgress = false
-            case .idle, .connecting:
+            case .connecting:
+                trace.record("Moteur WebRTC en connexion")
+            case .idle:
                 break
+            }
+        }
+        .onChange(of: controller.stage) { _, stage in
+            if let safeName = LaunchTrace.stageName(stage) {
+                trace.record(safeName)
+            }
+        }
+        .onChange(of: controller.iceState) { _, newState in
+            switch newState.lowercased() {
+            case "checking": trace.record("ICE : vérification du réseau")
+            case "connected", "completed": trace.record("ICE : connexion établie", level: "OK")
+            case "disconnected": trace.record("ICE : connexion interrompue", level: "ERREUR")
+            case "failed": trace.record("ICE : échec de la connexion", level: "ERREUR")
+            default: break
+            }
+        }
+        .onChange(of: controller.controlChannelAlive) { _, alive in
+            trace.record(alive ? "Canal de commandes actif" : "Canal de commandes interrompu",
+                         level: alive ? "OK" : "ERREUR")
+        }
+        .onChange(of: queueStatus) { _, status in
+            switch status {
+            case "EN": trace.record("Boosteroid : entrée dans la file d'attente")
+            case "LI": trace.record("Boosteroid : session attribuée", level: "OK")
+            case "UN": trace.record("Boosteroid : machine en préparation")
+            default: break
             }
         }
         // Keep the Apple TV awake for the WHOLE session, queue included.
@@ -265,11 +420,13 @@ struct StreamView: View {
             UIApplication.shared.isIdleTimerDisabled = true
             launchInProgress = true
             lastLaunchCheckpoint = "Écran de streaming affiché"
+            trace.record("Écran de streaming affiché")
         }
         .onDisappear {
             UIApplication.shared.isIdleTimerDisabled = false
             lastLaunchCheckpoint = "Session fermée normalement"
             launchInProgress = false
+            trace.record("Fermeture normale de l'écran de streaming", level: "OK")
             // Always tears down THIS device's local WebRTC/control-socket
             // connection (StreamController.disconnect()) — the actual cloud
             // session is only ended explicitly via the Disconnect button
@@ -823,8 +980,11 @@ struct StreamView: View {
         }
         do {
             lastLaunchCheckpoint = "Authentification Boosteroid"
+            trace.record("Vérification de l'authentification")
             let cookies = try await authManager.resolveCookies()
+            trace.record("Authentification disponible", level: "OK")
             lastLaunchCheckpoint = "Demande de session et attente de machine"
+            trace.record("Envoi de la demande de session à Boosteroid")
             // createAndAwaitSession enqueues, then polls the CONFIRMED
             // last-session endpoint (EN = queued, LI = active) until ready
             // or 180s elapses, then fetches session/details for the real
@@ -850,9 +1010,11 @@ struct StreamView: View {
                 connectedServerName = gamesViewModel.playgroundName(forGatewayHost: nodeBaseUrl)
             }
             lastLaunchCheckpoint = "Connexion WebRTC"
+            trace.record("Machine attribuée : préparation du canal de commandes", level: "OK")
             await controller.connect(session: resolvedSession, settings: settings, cookies: cookies)
         } catch {
             lastLaunchCheckpoint = "Erreur de démarrage interceptée par l'application"
+            trace.record("Erreur de démarrage interceptée (détails affichés sur l'écran d'erreur)", level: "ERREUR")
             launchInProgress = false
             errorMessage = error.localizedDescription
         }
