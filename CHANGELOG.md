@@ -14,12 +14,39 @@
 | Base d'origine | `main` | `623c42b` | Version amont disponible | **Testée** : installation et streaming sur Apple TV |
 | V1 — Catalogue unifié | `feature/unified-catalog-v1` | `a788071` | **Réussie** le 20/11/2026 | **Non confirmé** |
 | V2 — Smart Experience | `feature/v2-smart-experience` | `fd60053` | **Réussie** le 20/11/2026 | **Non confirmé** |
+| V2.3.2 — Lecteur HLS Steam (expérimental) | `feature/v2.3.2-hls-trailers` | `b95d82a` | **En cours** — [#45024722519](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45024722519) | **Non testé sur Apple TV** |
 | V2.3.1 — Diagnostic des aperçus vidéo (expérimental) | `feature/v2.3.1-video-diagnostics` | `dcc7ac6` | **Réussie** le 22/11/2026 — [#45024136324](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45024136324) | **Non testé sur Apple TV** |
 | V2.3 — Vidéo silencieuse automatique et résumé FR (expérimental) | `feature/v2.3-french-trailers` | `244fc60` | **Réussie** le 22/11/2026 | **Non testé sur Apple TV** |
 | V2.2 — Filtres et fiches enrichies, interface FR (expérimental) | `feature/v2.2-multi-store-filters` | `e4b1ba3` | **Réussie** le 22/11/2026 | **Non testé sur Apple TV** |
 | V2.1 — Stability | `feature/v2.1-stability` | `17df76b` | **Réussie** le 20/11/2026 | **3 OK, 3 KO** — 22/11/2026 (ligne rouge disparue, origine inconnue) |
 
 **Important :** V2 inclut V1, V2.1 inclut V1 + V2, V2.2 part de V2.1 et V2.3 part de V2.2. La branche `main` conserve le code de base : **aucune des branches expérimentales n'est fusionnée dans `main`** à la date de ce journal.
+
+## 22 novembre 2026 — V2.3.2 « Lecture HLS » (correctif expérimental)
+
+**Motif :** sur Apple TV, la fiche **Red Dead Redemption 2 (Rockstar)** affichait « 2 vidéo(s) listée(s), mais aucune URL MP4 compatible (ID 1174180) » dans la V2.3.1. C'est un **test KO pour l'aperçu vidéo** ; le descriptif français et la fiche de jeu sont visibles.
+
+**Branche :** [feature/v2.3.2-hls-trailers](https://github.com/thedjazairi28/BoosteroidATV/tree/feature/v2.3.2-hls-trailers)  
+**Diff :** [V2.3.1 → V2.3.2](https://github.com/thedjazairi28/BoosteroidATV/compare/feature/v2.3.1-video-diagnostics...feature/v2.3.2-hls-trailers)  
+**Compilation :** [GitHub Actions #45024722519](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45024722519) — **en cours lors de la rédaction**.  
+**Tests Apple TV :** non exécutés sur V2.3.2.
+
+### Corrections
+
+- Steam renvoie désormais pour de nombreux titres une URL de playlist **HLS H.264** (champs `hls_h264` ou `hls`), alors que l'application n'acceptait que les anciens liens `mp4.max` et `mp4.480`.
+- Les extraits HLS `.m3u8` sont sélectionnés en priorité pour les bandes-annonces ; si aucun HLS reconnu n'existe, les liens MP4 traditionnels restent acceptés.
+- La vérification HTTPS et la liste de domaines Steam autorisés sont conservées.
+- Sur tvOS, les HLS sont confiés à **AVPlayer**, sans transcodage ; la répétition s'effectue au terme du clip avec `seek(to: .zero)` plutôt qu'avec `AVPlayerLooper`, afin d'éviter les téléchargements concurrents des morceaux HLS. Les MP4 conservent le lecteur en boucle initial.
+- La lecture reste **muette**, sans commandes d'interaction, et s'arrête à la fermeture de la fiche.
+- Diagnostic mis à jour pour distinguer les URL HLS ou MP4 trouvées des vidéos dépourvues de source compatible.
+
+### Validation et limites
+
+- [ ] Confirmer qu'une vidéo démarre dans la fiche Red Dead Redemption 2 sur Apple TV.
+- [ ] Vérifier silence, redémarrage en boucle, fermeture propre et navigation entre deux fiches.
+- [ ] Tester un jeu ne fournissant qu'un ancien MP4 et un jeu sans source.
+- [ ] Si le lecteur reste vide, examiner les erreurs AVPlayer et la disponibilité effective de la playlist HLS depuis le réseau de l'Apple TV.
+- Le correctif se fonde sur les champs de métadonnées Steam connus et sur la prise en charge HLS d'AVFoundation. **La réussite de la compilation ne prouve pas la lecture réelle**.
 
 ## 22 novembre 2026 — V2.3.1 « Diagnostic des vidéos » (correctif expérimental)
 
