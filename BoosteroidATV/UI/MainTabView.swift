@@ -95,6 +95,11 @@ struct MainTabView: View {
     }
 
     private func launch(_ game: GameInfo) {
+        guard gameToPlay == nil else { return }
+        // Keep a minimal local checkpoint to identify the stage reached if
+        // tvOS terminates the process; never write tokens, credentials or IDs.
+        UserDefaults.standard.set(true, forKey: "boosteroid.launch.inProgress")
+        UserDefaults.standard.set("Ouverture de l'écran de streaming", forKey: "boosteroid.launch.lastCheckpoint")
         viewModel.markPlayed(game)
         gameToPlay = game
     }
