@@ -155,10 +155,22 @@ struct GameOverviewView: View {
     let onDismiss: () -> Void
 
     @State private var videoPlaybackError: String?
+    @State private var launchTrace = LaunchTrace.shared
+    // Keep Xbox detail cards light until the Call of Duty catalog-sheet
+    // termination is understood. This can be disabled in Settings.
+    @AppStorage("boosteroid.xboxCardSafeMode") private var xboxCardSafeMode = true
+    private var useSafeXboxCard: Bool {
+        guard xboxCardSafeMode else { return false }
+        let keys = game.storeIdentifiers.joined(separator: " ").lowercased()
+        return keys.contains("xbox") || keys.contains("microsoft")
+            || game.title.localizedCaseInsensitiveContains("(Xbox)")
+    }
     // Safe launch mode: trailer HLS playback is opt-in until tvOS launch
     // crashes have been ruled out with real device diagnostics.
     @AppStorage("boosteroid.previewVideosEnabled") private var previewVideosEnabled = false
-    private var shownGame: GameInfo { viewModel.enrichedGame(game) }
+    private var shownGame: GameInfo {
+        useSafeXboxCard ? game : viewModel.enrichedGame(game)
+    }
 
     var body: some View {
         ZStack {
@@ -167,7 +179,8 @@ struct GameOverviewView: View {
             ZStack(alignment: .bottomLeading) {
                 ZStack {
                     heroArtwork
-                    if previewVideosEnabled, let videoURL = viewModel.backgroundVideo(for: game) {
+                    if !useSafeXboxCard, previewVideosEnabled,
+                       let videoURL = viewModel.backgroundVideo(for: game) {
                         SilentGameVideoBackground(url: videoURL, onError: { videoPlaybackError = $0 })
                             .allowsHitTesting(false)
                     }
@@ -207,7 +220,9 @@ struct GameOverviewView: View {
                         VStack(alignment: .leading, spacing: 12) {
                             Text("À propos du jeu")
                                 .font(.title2.weight(.semibold))
-                            Text(viewModel.frenchDescription(for: shownGame))
+                            Text(useSafeXboxCard
+                                ? GameDetailsFR.summary(for: shownGame)
+                                : viewModel.frenchDescription(for: shownGame))
                                 .font(.system(size: 24))
                                 .foregroundStyle(.white.opacity(0.9))
                                 .lineLimit(5)
@@ -229,7 +244,8 @@ struct GameOverviewView: View {
 
                         // Never expose technical Steam media diagnostics on the game
                         // sheet. Only offer a retry when a completed lookup found no clip.
-                        if viewModel.backgroundVideo(for: game) == nil
+                        if !useSafeXboxCard
+                            && viewModel.backgroundVideo(for: game) == nil
                             && viewModel.publicMediaByGameID[game.id] != nil
                             && !viewModel.loadingMediaGameIDs.contains(game.id) {
                             Button("Réessayer l'aperçu vidéo") {
@@ -278,17 +294,41 @@ struct GameOverviewView: View {
             .padding(.vertical, 86)
         }
         .onExitCommand(perform: onDismiss)
-        .task(id: game.id) {
-            await viewModel.loadGameDetails(game, authManager: authManager)
+        .onAppear {
+            launchTrace.record(useSafeXboxCard
+                ? "Fiche affichée : mode léger Xbox"
+                : "Fiche affichée : contenu enrichi")
+        }
+        .onDisappear {
+            launchTrace.record("Fiche de jeu refermée")
         }
         .task(id: game.id) {
+            guard !useSafeXboxCard else {
+                launchTrace.record("Fiche Xbox : détail réseau facultatif ignoré")
+                return
+            }
+            launchTrace.record("Fiche : chargement des détails Boosteroid")
+            await viewModel.loadGameDetails(game, authManager: authManager)
+            launchTrace.record("Fiche : détails Boosteroid terminés", level: "OK")
+        }
+        .task(id: game.id) {
+            guard !useSafeXboxCard else {
+                launchTrace.record("Fiche Xbox : recherche Steam ignorée")
+                return
+            }
+            launchTrace.record("Fiche : recherche des médias Steam")
             await viewModel.loadPublicMedia(for: game)
+            launchTrace.record("Fiche : recherche des médias terminée", level: "OK")
         }
     }
 
     @ViewBuilder
     private var heroArtwork: some View {
-        if let value = shownGame.heroBannerUrl, let url = URL(string: value) {
+        if useSafeXboxCard {
+            // Avoid decoding a potentially large hero banner while the
+            // catalog is already retaining its poster grid in memory.
+            BoosteroidTheme.cardGradient
+        } else if let value = shownGame.heroBannerUrl, let url = URL(string: value) {
             AsyncImage(url: url) { phase in
                 if case .success(let image) = phase {
                     image.resizable().aspectRatio(contentMode: .fill)
