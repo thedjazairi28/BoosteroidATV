@@ -14,6 +14,7 @@
 | Base d'origine | `main` | `623c42b` | Version amont disponible | **Testée** : installation et streaming sur Apple TV |
 | V1 — Catalogue unifié | `feature/unified-catalog-v1` | `a788071` | **Réussie** le 20/11/2026 | **Non confirmé** |
 | V2 — Smart Experience | `feature/v2-smart-experience` | `fd60053` | **Réussie** le 20/11/2026 | **Non confirmé** |
+| V2.4.1 — Stabilité du lancement (expérimental) | `feature/v2.4.1-launch-stability` | `3f16bd9` | **En cours** — [#45030927237](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45030927237) | **Non testé sur Apple TV** |
 | V2.4 — Souris virtuelle avec manette (expérimental) | `feature/v2.4-gamepad-pointer` | `fd7d78a` | **Réussie** — [#45026265985](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45026265985) | **Non testé sur Apple TV** |
 | V2.3.3 — Fiches épurées (expérimental) | `feature/v2.3.3-clean-game-cards` | `98a809c` | **En cours** — compilation GitHub Actions | **Non testé sur Apple TV** |
 | V2.3.2 — Lecteur HLS Steam (expérimental) | `feature/v2.3.2-hls-trailers` | `b95d82a` | **Réussie** — [#45024722519](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45024722519) | **Non testé sur Apple TV** |
@@ -23,6 +24,33 @@
 | V2.1 — Stability | `feature/v2.1-stability` | `17df76b` | **Réussie** le 20/11/2026 | **3 OK, 3 KO** — 22/11/2026 (ligne rouge disparue, origine inconnue) |
 
 **Important :** V2 inclut V1, V2.1 inclut V1 + V2, V2.2 part de V2.1 et V2.3 part de V2.2. La branche `main` conserve le code de base : **aucune des branches expérimentales n'est fusionnée dans `main`** à la date de ce journal.
+
+## 22 novembre 2026 — V2.4.1 « Stabilité du lancement » (correctif expérimental)
+
+**Symptôme rapporté :** sélectionner **« Installer et jouer »** dans le catalogue ferme immédiatement ou rapidement l'application, avec retour à l'accueil de l'Apple TV. **Aucun journal de crash tvOS n'a été fourni : la cause exacte n'est pas confirmée.**
+
+**Branche :** [feature/v2.4.1-launch-stability](https://github.com/thedjazairi28/BoosteroidATV/tree/feature/v2.4.1-launch-stability)  
+**Diff :** [V2.4 → V2.4.1](https://github.com/thedjazairi28/BoosteroidATV/compare/feature/v2.4-gamepad-pointer...feature/v2.4.1-launch-stability)  
+**Build :** [GitHub Actions #45030927237](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45030927237) — **en cours** lors de cette rédaction.  
+**Test Apple TV :** à réaliser.
+
+### Hypothèse technique et mitigation
+
+- La V2.4 peut afficher un **trailer HLS (AVPlayer)** dans une fiche au moment où l'utilisateur lance une session **WebRTC**. Deux moteurs de décodage vidéo peuvent se chevaucher brièvement lors des transitions SwiftUI, et déclencher une pression mémoire sur tvOS (**hypothèse, non démontrée sans logs / JetsamEvent**).
+- Quand l'utilisateur appuie sur **Jouer** ou **Installer et jouer**, l'application **supprime d'abord le lecteur d'aperçu HLS**, attend brièvement un cycle de rendu avant d'ouvrir le flux de jeu et bloque les doubles pressions.
+- La même protection est appliquée au carrousel de la Bibliothèque, qui ferme déjà la fiche avant d'ouvrir la session.
+- **Le code ne modifie pas le protocole Boosteroid d'installation**. Les jeux marqués « Installer et jouer » utilisent la même demande d'ouverture de session que les autres jeux, et l'installation effective sur la machine cloud n'est pas pilotée explicitement par cette mitigation.
+
+### Vérifications nécessaires
+
+- [ ] Lancer un jeu **Jouer** connu fonctionnel, depuis la Bibliothèque.
+- [ ] Lancer un jeu **Installer et jouer** depuis le Catalogue et observer si l'application reste ouverte, même si Boosteroid refuse la session.
+- [ ] Relancer un jeu dont l'aperçu vidéo HLS a réellement démarré (à contrôler pour exclure le chevauchement des décodeurs).
+- [ ] Si le retour à l'accueil Apple TV persiste : récupérer le **rapport de crash ou JetsamEvent tvOS** et noter le titre précis du jeu, sa boutique et le moment de la sortie. Sans ces données, ne pas présenter l'hypothèse mémoire comme un diagnostic définitif.
+
+### Évolution « Mes jeux » (projet indépendant)
+
+Une branche **`feature/v2.5-my-games-home`** a été créée pour une future page d'accueil : « Reprendre », favoris, historique récent et jeux **marqués manuellement comme possédés**. La vérification de licences multi-comptes EA/Steam/Epic/Xbox n'est **pas disponible** à ce stade. **Ne pas regrouper cette évolution visuelle avec le correctif de crash avant validation.**
 
 ## 22 novembre 2026 — V2.4 « Souris virtuelle avec manette » (expérimental)
 
