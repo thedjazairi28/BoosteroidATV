@@ -224,21 +224,17 @@ struct GameOverviewView: View {
                         }
                         .frame(maxWidth: 800, alignment: .leading)
 
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text(videoPlaybackError ?? viewModel.mediaStatus(for: game))
-                                .font(.caption)
-                                .foregroundStyle(.white.opacity(0.8))
-                                .lineLimit(2)
-                            if viewModel.backgroundVideo(for: game) == nil
-                                && !viewModel.loadingMediaGameIDs.contains(game.id) {
-                                Button("Réessayer l'aperçu vidéo") {
-                                    Task { await viewModel.loadPublicMedia(for: game, force: true) }
-                                }
-                                .font(.caption)
-                                .buttonStyle(.bordered)
+                        // Never expose technical Steam media diagnostics on the game
+                        // sheet. Only offer a retry when a completed lookup found no clip.
+                        if viewModel.backgroundVideo(for: game) == nil
+                            && viewModel.publicMediaByGameID[game.id] != nil
+                            && !viewModel.loadingMediaGameIDs.contains(game.id) {
+                            Button("Réessayer l'aperçu vidéo") {
+                                Task { await viewModel.loadPublicMedia(for: game, force: true) }
                             }
+                            .font(.caption)
+                            .buttonStyle(.bordered)
                         }
-                        .frame(maxWidth: 800, alignment: .leading)
 
                         HStack(spacing: 16) {
                             Button(action: onPlay) {
@@ -765,19 +761,16 @@ private struct LibraryCarouselView: View {
                         .lineLimit(5)
                         .fixedSize(horizontal: false, vertical: true)
 
-                    VStack(alignment: .leading, spacing: 7) {
-                        Text(videoPlaybackError ?? viewModel.mediaStatus(for: game))
-                            .font(.system(size: 16))
-                            .foregroundStyle(.white.opacity(0.75))
-                            .lineLimit(2)
-                        if viewModel.backgroundVideo(for: game) == nil
-                            && !viewModel.loadingMediaGameIDs.contains(game.id) {
-                            Button("Réessayer la vidéo") {
-                                Task { await viewModel.loadPublicMedia(for: game, force: true) }
-                            }
-                            .font(.system(size: 17))
-                            .buttonStyle(.bordered)
+                    // Video discovery counts, Steam IDs and transport details
+                    // belong in diagnostics, not the television interface.
+                    if viewModel.backgroundVideo(for: game) == nil
+                        && viewModel.publicMediaByGameID[game.id] != nil
+                        && !viewModel.loadingMediaGameIDs.contains(game.id) {
+                        Button("Réessayer la vidéo") {
+                            Task { await viewModel.loadPublicMedia(for: game, force: true) }
                         }
+                        .font(.system(size: 17))
+                        .buttonStyle(.bordered)
                     }
 
                     if !game.storeIdentifiers.isEmpty {
