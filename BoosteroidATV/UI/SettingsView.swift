@@ -5,6 +5,7 @@ struct SettingsView: View {
     @Environment(GamesViewModel.self) var viewModel
     @State private var showGameAccounts = false
     @AppStorage("boosteroid.previewVideosEnabled") private var previewVideosEnabled = false
+    @AppStorage("boosteroid.xboxCardSafeMode") private var xboxCardSafeMode = true
     @AppStorage("boosteroid.launch.lastCheckpoint") private var lastLaunchCheckpoint = "Aucune tentative enregistrée"
     @AppStorage("boosteroid.launch.inProgress") private var launchInProgress = false
     @AppStorage("boosteroid.launch.showLiveLog") private var showLiveLog = true
@@ -109,6 +110,10 @@ struct SettingsView: View {
                         .foregroundStyle(.secondary)
                 }
                 section("Sécurité du lancement") {
+                    SettingsToggle("Mode léger des fiches Xbox", isOn: $xboxCardSafeMode)
+                    Text("Activé par défaut : les fiches Xbox évitent les grandes images et les recherches de données facultatives, après un crash constaté à l'ouverture de Call of Duty. L'image du catalogue reste visible ; aucune modification du moteur de streaming.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                     SettingsToggle("Aperçus vidéo animés (expérimental)", isOn: $previewVideosEnabled)
                     Text("Désactivés par défaut pour limiter le chevauchement entre les bandes-annonces et le décodeur du jeu. Les fiches conservent leur illustration et leur description.")
                         .font(.caption)
