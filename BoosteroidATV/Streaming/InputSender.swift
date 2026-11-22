@@ -400,7 +400,27 @@ final class InputSender: InputEventHandler {
         gamepadPointerModeEnabled = enabled
         lastPointerAState.removeAll()
         lastPointerBState.removeAll()
-        guard enabled else { return }
+        if !enabled {
+            // Exiting with B/Circle must not deliver the still-held exit button
+            // as a fresh gamepad press on the very next polling frame.
+            for controller in GCController.controllers() {
+                guard let pad = controller.extendedGamepad else { continue }
+                let key = ObjectIdentifier(controller)
+                lastButtonState[key] = [
+                    0: pad.buttonA.isPressed,
+                    1: pad.buttonB.isPressed,
+                    2: pad.buttonX.isPressed,
+                    3: pad.buttonY.isPressed,
+                    4: pad.leftShoulder.isPressed,
+                    5: pad.rightShoulder.isPressed,
+                    6: pad.buttonOptions?.isPressed ?? false,
+                    7: pad.buttonMenu.isPressed,
+                    8: pad.leftThumbstickButton?.isPressed ?? false,
+                    9: pad.rightThumbstickButton?.isPressed ?? false
+                ]
+            }
+            return
+        }
 
         for controller in GCController.controllers() {
             guard let pad = controller.extendedGamepad else { continue }
@@ -410,7 +430,7 @@ final class InputSender: InputEventHandler {
             guard let id = controllerIds[key] else { continue }
 
             var buttons = lastButtonState[key] ?? [:]
-            for (index, pressed) in buttons where pressed {
+            for index in buttons.keys.filter({ buttons[$0] == true }) {
                 Task { [controlChannel] in
                     await controlChannel.send(type: "controller", action: "button",
                                               fields: ["id": id, "button": index, "value": 0])
