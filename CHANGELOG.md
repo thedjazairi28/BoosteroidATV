@@ -14,7 +14,7 @@
 | Base d'origine | `main` | `623c42b` | Version amont disponible | **Testée** : installation et streaming sur Apple TV |
 | V1 — Catalogue unifié | `feature/unified-catalog-v1` | `a788071` | **Réussie** le 20/11/2026 | **Non confirmé** |
 | V2 — Smart Experience | `feature/v2-smart-experience` | `fd60053` | **Réussie** le 20/11/2026 | **Non confirmé** |
-| V2.3.2 — Lecteur HLS Steam (expérimental) | `feature/v2.3.2-hls-trailers` | `b95d82a` | **En cours** — [#45024722519](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45024722519) | **Non testé sur Apple TV** |
+| V2.3.2 — Lecteur HLS Steam (expérimental) | `feature/v2.3.2-hls-trailers` | `b95d82a` | **Réussie** — [#45024722519](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45024722519) | **Non testé sur Apple TV** |
 | V2.3.1 — Diagnostic des aperçus vidéo (expérimental) | `feature/v2.3.1-video-diagnostics` | `dcc7ac6` | **Réussie** le 22/11/2026 — [#45024136324](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45024136324) | **Non testé sur Apple TV** |
 | V2.3 — Vidéo silencieuse automatique et résumé FR (expérimental) | `feature/v2.3-french-trailers` | `244fc60` | **Réussie** le 22/11/2026 | **Non testé sur Apple TV** |
 | V2.2 — Filtres et fiches enrichies, interface FR (expérimental) | `feature/v2.2-multi-store-filters` | `e4b1ba3` | **Réussie** le 22/11/2026 | **Non testé sur Apple TV** |
@@ -28,7 +28,7 @@
 
 **Branche :** [feature/v2.3.2-hls-trailers](https://github.com/thedjazairi28/BoosteroidATV/tree/feature/v2.3.2-hls-trailers)  
 **Diff :** [V2.3.1 → V2.3.2](https://github.com/thedjazairi28/BoosteroidATV/compare/feature/v2.3.1-video-diagnostics...feature/v2.3.2-hls-trailers)  
-**Compilation :** [GitHub Actions #45024722519](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45024722519) — **en cours lors de la rédaction**.  
+**Compilation :** [GitHub Actions #45024722519](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45024722519) — **réussie**. Artifact : `BoosteroidATV-v2-3-2-hls-trailers-unsigned` (ZIP contenant l'IPA), expiration **29/11/2026**.  
 **Tests Apple TV :** non exécutés sur V2.3.2.
 
 ### Corrections
