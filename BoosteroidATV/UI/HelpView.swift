@@ -18,79 +18,76 @@ struct HelpView: View {
 
     private enum Topic: String, CaseIterable, Identifiable {
         case introduction = "Introduction"
-        case gettingStarted = "Getting Started"
-        case controlMethods = "Control Methods"
-        case steam = "Steam Overlay"
-        case duringGameplay = "During Gameplay"
-        case configuration = "Configuration"
-        case requirements = "Requirements & Limits"
-        case troubleshooting = "Troubleshooting"
+        case gettingStarted = "Bien démarrer"
+        case controlMethods = "Commandes"
+        case steam = "Interface Steam"
+        case duringGameplay = "Pendant une partie"
+        case configuration = "Paramètres"
+        case requirements = "Prérequis et limites"
+        case troubleshooting = "Dépannage"
 
         var id: String { rawValue }
 
-        /// One entry per paragraph. A leading "• " marks a bullet; the row
-        /// renderer indents those and leaves everything else as body copy.
         var lines: [String] {
             switch self {
             case .introduction:
                 return [
-                    "BoosteroidATV is an unofficial, open-source Boosteroid client for Apple TV. It signs in to your Boosteroid account, lists the games in your library, and streams a session to your TV over WebRTC with full controller support.",
-                    "It is not affiliated with, endorsed by, or supported by Boosteroid, and it needs your own active Boosteroid subscription.",
+                    "BoosteroidATV est un client Boosteroid indépendant et open source pour Apple TV. Il permet de jouer en streaming avec une manette.",
+                    "Cette application n'est ni officielle ni prise en charge par Boosteroid. Un abonnement actif est nécessaire."
                 ]
             case .gettingStarted:
                 return [
-                    "• Sign in with your Boosteroid email and password on the login screen. No browser or second device is needed.",
-                    "• Pair a game controller in tvOS Settings → Remotes and Devices → Bluetooth.",
-                    "• Pick a game from your library on the Home screen. The app queues a session, waits for a machine, and starts streaming on its own.",
-                    "Launching a game resumes it directly if that same game is already running on your account.",
+                    "• Connecte-toi avec l'adresse e-mail et le mot de passe de ton compte Boosteroid.",
+                    "• Associe une manette dans Réglages tvOS → Télécommandes et appareils → Bluetooth.",
+                    "• Sélectionne un jeu dans l'accueil ou la bibliothèque : l'application prépare la session.",
+                    "Relancer un jeu peut reprendre la session précédente si elle est encore active."
                 ]
             case .controlMethods:
                 return [
-                    "• Game controller — MFi, Xbox, PlayStation, and Nintendo Switch pads. Buttons, triggers, sticks, and D-pad are all forwarded to the cloud PC.",
-                    "• Siri Remote — navigates the app. During a stream, press Play/Pause to open the options bar.",
-                    "• Options bar from a controller — hold Start + Select together, since controllers have no Play/Pause button.",
-                    "• On-screen keyboard — open it from the options bar to type into launchers, logins, or in-game chat.",
-                    "• Pointer mode — turns the Siri Remote touch surface into a mouse, for launchers and desktop UI that a gamepad can't reach.",
+                    "• Manettes compatibles : MFi, Xbox, PlayStation et Nintendo Switch. Les touches sont transmises au PC distant.",
+                    "• La Siri Remote permet de naviguer dans l'application.",
+                    "• Pour ouvrir le menu pendant un jeu, utilise Lecture/Pause ou Start + Select sur la manette.",
+                    "• Le clavier virtuel est disponible dans le menu de session.",
+                    "• Le mode Pointeur utilise la surface tactile de la Siri Remote comme souris et son clic central comme clic gauche."
                 ]
             case .steam:
                 return [
-                    "The Steam Overlay button in the options bar sends Shift+Tab to the cloud PC — the standard Steam overlay shortcut.",
-                    "The overlay is drawn inside the stream itself, so once it opens, use your controller as you normally would.",
+                    "Le bouton Interface Steam envoie le raccourci Maj + Tab au PC distant.",
+                    "Si Steam prend en charge la navigation à la manette, utilise-la dans cette interface."
                 ]
             case .duringGameplay:
                 return [
-                    "To open the options bar: press Play/Pause on the Siri Remote, or hold Start + Select together on a game controller. Repeat to close it.",
-                    "Controllers have no Play/Pause button, which is why they use the Start + Select combo instead. Pressing either button on its own still goes to the game as normal.",
-                    "• Disconnect — ends the cloud session and returns to the app. Boosteroid keeps your machine warm for a while afterwards, so reconnecting soon after picks the game back up where you left it.",
-                    "• Keyboard — opens the on-screen keyboard.",
-                    "• Pointer — uses the Siri Remote touch surface as a mouse.",
-                    "• Steam Overlay — sends Shift+Tab to the cloud PC.",
-                    "• Performance Overlay — shows live bitrate, frame rate, latency, and which server you're on.",
+                    "Ouvre ou ferme la barre d'options avec Lecture/Pause sur la Siri Remote ou Start + Select sur une manette.",
+                    "• Déconnexion : quitte l'affichage du flux, mais Boosteroid peut garder la machine active quelque temps.",
+                    "• Clavier : ouvre le clavier virtuel.",
+                    "• Pointeur : permet de cliquer avec la Siri Remote.",
+                    "• Interface Steam : affiche le panneau Steam.",
+                    "• Performances : affiche débit, images par seconde et latence."
                 ]
             case .configuration:
                 return [
-                    "• Stream quality — resolution from 720p to 4K, and 60 or 120 fps.",
-                    "• Bitrate — automatic, or a manual ceiling if you'd rather cap it yourself.",
-                    "• Controller — analog stick deadzone, plus rumble on/off and its intensity.",
-                    "• Overlay — the performance overlay is off by default; turn it on here to have it show in every stream. You can also toggle it for the current session from the options bar.",
-                    "• Region — allow connections to distant regions, and pick a preferred server location. Allowing distant regions widens the pool of machines but can add latency.",
-                    "Quality and region changes take effect the next time you start a game, not mid-session.",
+                    "• Qualité : de 720p à 4K et jusqu'à 120 images par seconde selon le service et le matériel.",
+                    "• Débit : automatique ou plafond manuel.",
+                    "• Manette : zone morte et vibrations.",
+                    "• Diagnostics : affichage facultatif des performances.",
+                    "• Région : serveur préféré ou régions éloignées, qui peuvent ajouter de la latence.",
+                    "Les changements prennent effet lors du prochain lancement de jeu."
                 ]
             case .requirements:
                 return [
-                    "• An Apple TV running tvOS 17 or later.",
-                    "• An active, paid Boosteroid subscription.",
-                    "• A strong 5 GHz Wi-Fi or wired connection, especially for 1080p60 and above.",
-                    "Video is H.264 only. Boosteroid delivers H.265 and AV1 exclusively over its own native transport, which this app does not implement — so that's a service-side limit, not an Apple TV one.",
+                    "• Apple TV sous tvOS 17 minimum.",
+                    "• Abonnement Boosteroid actif.",
+                    "• Réseau stable, idéalement Ethernet ou Wi-Fi 5 GHz.",
+                    "L'application utilise H.264. Le transport natif Boosteroid nécessaire pour H.265 ou AV1 n'est pas implémenté."
                 ]
             case .troubleshooting:
                 return [
-                    "• Can't sign in — use the same email you sign in with on cloud.boosteroid.com, not another address you own. And if you created the account with \"Continue with Google\" it has no password at all, so set one on the website first, then sign in here with it.",
-                    "• Controller not responding — make sure the pad is paired in tvOS Settings → Remotes and Devices, not just powered on. If it still doesn't respond, disconnect and start the game again.",
-                    "• Rumble not working — check that rumble is enabled in Settings. Some third-party pads running in a compatibility or Xbox emulation mode don't implement vibration at all, even though their buttons work fine.",
-                    "• Bitrate drops while playing — the server lowers quality when it detects packet loss or rising latency. Turn on the performance overlay: if latency climbs as the bitrate falls, it's a network condition rather than the app.",
-                    "• Long queue times — Boosteroid queues per region. Allowing distant regions in Settings gives you access to more machines.",
-                    "• Black screen after connecting — disconnect and start the game again.",
+                    "• Connexion impossible : vérifie ton e-mail. Pour un compte créé avec Google, définis d'abord un mot de passe sur le site Boosteroid.",
+                    "• Manette inactive : vérifie l'association Bluetooth sur l'Apple TV et relance la session.",
+                    "• Vibrations absentes : vérifie le réglage. Certaines manettes tierces ne prennent pas en charge les vibrations.",
+                    "• Qualité dégradée : surveille le débit et la latence dans les diagnostics.",
+                    "• File d'attente longue : les régions éloignées peuvent offrir plus de serveurs, mais augmenter la latence.",
+                    "• Écran noir : déconnecte-toi puis relance le jeu."
                 ]
             }
         }
@@ -99,7 +96,7 @@ struct HelpView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 36) {
-                Text("Help")
+                Text("Aide")
                     .font(.system(size: 40, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
                     .padding(.top, 12)
@@ -170,7 +167,7 @@ struct HelpView: View {
 
     private var supportSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("SUPPORT THE PROJECT")
+            Text("SOUTENIR LE PROJET")
                 .font(.system(size: 18, weight: .bold, design: .rounded))
                 .tracking(2)
                 .foregroundStyle(.secondary)
@@ -189,10 +186,10 @@ struct HelpView: View {
                 }
 
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("Buy Me a Coffee")
+                    Text("Faire un don")
                         .font(.system(size: 28, weight: .semibold, design: .rounded))
                         .foregroundStyle(.white)
-                    Text("BoosteroidATV is free and open source. If it's useful to you, scan the code with your phone to support development.")
+                    Text("BoosteroidATV est gratuit et open source. Pour soutenir son développement, scanne ce code avec ton téléphone.")
                         .font(.system(size: 22))
                         .foregroundStyle(.white.opacity(0.85))
                     Text(Self.donationURL)
