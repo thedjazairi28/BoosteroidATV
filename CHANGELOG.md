@@ -23,7 +23,7 @@
 
 **Branche :** [feature/v2.2-multi-store-filters](https://github.com/thedjazairi28/BoosteroidATV/tree/feature/v2.2-multi-store-filters)  
 **Comparaison avec V2.1 :** [diff V2.1 → V2.2](https://github.com/thedjazairi28/BoosteroidATV/compare/feature/v2.1-stability...feature/v2.2-multi-store-filters)  
-**Compilation :** [premier build des filtres #45020911625](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45020911625) — **réussi** ; [build complet des filtres, fiches et français #45021265100](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45021265100) — **réussi**. Artifact : `BoosteroidATV-v2-2-multi-store-filters-unsigned` (ZIP contenant l'IPA) ; expiration GitHub **29 novembre 2026**.  
+**Compilation :** [premier build des filtres #45020911625](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45020911625) — **réussi** ; [build initial avec traduction et fiches #45021265100](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45021265100) — **réussi** ; [nouvelle compilation avec la refonte des fiches et les détails à la demande #45021832418](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45021832418) — **à vérifier après exécution**. Artifact attendu : `BoosteroidATV-v2-2-multi-store-filters-unsigned` (ZIP contenant l'IPA). Les artifacts sont temporaires.  
 **Tests tvOS :** non effectués sur cette version.
 
 ### Ajouté
@@ -43,6 +43,15 @@
 - Bouton **« Détails du jeu »** dans le bandeau d'accueil pour ouvrir la fiche plutôt que lancer immédiatement un jeu.
 - Traduction française des principaux intitulés de genres courants.
 
+### Refonte après retour terrain (photo de Red Dead Redemption 2, version installée V2.1)
+
+- La capture montre un **fond générique dominant**, avec le titre, les boutons et des données de jeu tassés en bas de l'écran. Il s'agit du **carrousel de la bibliothèque V2.1**, pas d'un rendu V2.2.
+- Refonte du carrousel : **jaquette dédiée si disponible**, présentation en deux colonnes, panneau à contraste renforcé, titre, synopsis, genres, boutiques, studio, éditeur, classification et boutons « Jouer » / « Favoris ».
+- Requête facultative de **détails uniquement lorsqu'une fiche est ouverte**, mise en cache par identifiant pour éviter de reproduire les centaines de requêtes à l'origine des erreurs HTTP 429.
+- Le décodage des détails accepte deux formes possibles de réponse (application seule ou objet `data`) ; le format de cet endpoint restant non validé en conditions réelles, **son enrichissement n'est pas garanti**.
+- Si le service ne fournit pas de synopsis, un message explicite apparaît. Aucun synopsis inventé ou dépendance à une API de traduction externe.
+- **Statut : code soumis ; validation Apple TV et comportement réel de l'API à contrôler après compilation.**
+
 ### Interface en français
 
 - Traduction des **libellés de l'accueil, de la bibliothèque, de la connexion, des paramètres et des commandes de streaming**.
@@ -54,6 +63,7 @@
 ### Limitations et validation nécessaire
 
 - Vérifier l'ouverture des nouvelles fiches de jeu, les résumés et le rendu sans débordement sur Apple TV.
+- Vérifier spécialement **Red Dead Redemption 2 (Rockstar)** : récupération éventuelle d'un résumé via les détails à la demande, couverture, navigation du carrousel et fluidité. Les données manquantes doivent rester signalées.
 - Vérifier les libellés et la navigation en français sur les écrans d'accueil, bibliothèque, connexion, aide, streaming et paramètres.
 - Les résumés fournis par Boosteroid peuvent être absents ou rédigés en anglais. **Pas d'invention ni de traduction automatique de ces textes.**
 - Le rattachement à une boutique dépend des métadonnées Boosteroid, avec des correspondances textuelles comme en V2.1 ; les jeux mal renseignés peuvent apparaître dans « Autres ».
