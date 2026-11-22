@@ -23,7 +23,7 @@
 
 **Branche :** [feature/v2.2-multi-store-filters](https://github.com/thedjazairi28/BoosteroidATV/tree/feature/v2.2-multi-store-filters)  
 **Comparaison avec V2.1 :** [diff V2.1 → V2.2](https://github.com/thedjazairi28/BoosteroidATV/compare/feature/v2.1-stability...feature/v2.2-multi-store-filters)  
-**Compilation :** [premier build des filtres #45020911625](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45020911625) — **réussi** ; [build initial avec traduction et fiches #45021265100](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45021265100) — **réussi** ; [nouvelle compilation avec la refonte des fiches et les détails à la demande #45021832418](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45021832418) — **à vérifier après exécution**. Artifact attendu : `BoosteroidATV-v2-2-multi-store-filters-unsigned` (ZIP contenant l'IPA). Les artifacts sont temporaires.  
+**Compilation :** [premier build des filtres #45020911625](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45020911625) — **réussi** ; [build initial avec traduction et fiches #45021265100](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45021265100) — **réussi** ; [refonte des fiches et récupération des détails #45021832418](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45021832418) — **réussi** ; [compilation de la dernière modification, limitant les requêtes en navigation rapide #45021937836](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45021937836) — **à vérifier**. Artifact attendu : `BoosteroidATV-v2-2-multi-store-filters-unsigned` (ZIP contenant l'IPA). Les artifacts sont temporaires.  
 **Tests tvOS :** non effectués sur cette version.
 
 ### Ajouté
@@ -47,7 +47,7 @@
 
 - La capture montre un **fond générique dominant**, avec le titre, les boutons et des données de jeu tassés en bas de l'écran. Il s'agit du **carrousel de la bibliothèque V2.1**, pas d'un rendu V2.2.
 - Refonte du carrousel : **jaquette dédiée si disponible**, présentation en deux colonnes, panneau à contraste renforcé, titre, synopsis, genres, boutiques, studio, éditeur, classification et boutons « Jouer » / « Favoris ».
-- Requête facultative de **détails uniquement lorsqu'une fiche est ouverte**, mise en cache par identifiant pour éviter de reproduire les centaines de requêtes à l'origine des erreurs HTTP 429.
+- Requête facultative de **détails uniquement lorsqu'une fiche est ouverte**, mise en cache par identifiant et différée de **450 ms lors des changements de sélection** pour éviter de reproduire les centaines de requêtes à l'origine des erreurs HTTP 429.
 - Le décodage des détails accepte deux formes possibles de réponse (application seule ou objet `data`) ; le format de cet endpoint restant non validé en conditions réelles, **son enrichissement n'est pas garanti**.
 - Si le service ne fournit pas de synopsis, un message explicite apparaît. Aucun synopsis inventé ou dépendance à une API de traduction externe.
 - **Statut : code soumis ; validation Apple TV et comportement réel de l'API à contrôler après compilation.**
