@@ -59,6 +59,18 @@ class GamesViewModel {
         publicMediaByGameID[game.id]?.videos ?? []
     }
 
+    /// Prefer actual gameplay footage when Steam labels it as such; otherwise
+    /// use the first public trailer. It is embedded silently as moving artwork.
+    func backgroundVideo(for game: GameInfo) -> URL? {
+        let clips = publicMediaByGameID[game.id]?.videos ?? []
+        let preferred = clips.first { clip in
+            let title = clip.title.lowercased()
+            return title.contains("gameplay") || title.contains("game play")
+                || title.contains("jouabilité") || title.contains("extrait de jeu")
+        }
+        return (preferred ?? clips.first)?.videoURL
+    }
+
     func frenchDescription(for game: GameInfo) -> String {
         if let text = publicMediaByGameID[game.id]?.descriptionFR, !text.isEmpty { return text }
         let boosteroidText = game.summary?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
