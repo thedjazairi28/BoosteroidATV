@@ -10,25 +10,32 @@ struct CatalogView: View {
     let onRefresh: () async -> Void
 
     @State private var searchText = ""
-    @State private var selectedStore: StoreFilter = .all
+    /// All stores selected by default. Each store can be enabled independently.
+    @State private var selectedStores: Set<StoreFilter> = Set(StoreFilter.allCases)
 
     private enum StoreFilter: String, CaseIterable, Identifiable {
-        case all = "Tous"
         case steam = "Steam"
         case xbox = "Xbox"
         case epic = "Epic Games"
+        case other = "Autres"
 
         var id: String { rawValue }
 
         func includes(_ game: GameInfo) -> Bool {
-            if self == .all { return true }
             let keys = game.storeIdentifiers.joined(separator: " ").lowercased()
             let title = game.title.lowercased()
             switch self {
-            case .all: return true
-            case .steam: return keys.contains("steam") || title.contains("(steam)")
-            case .xbox: return keys.contains("xbox") || keys.contains("microsoft") || title.contains("(xbox)")
-            case .epic: return keys.contains("epic") || title.contains("(epic)")
+            case .steam:
+                return keys.contains("steam") || title.contains("(steam)")
+            case .xbox:
+                return keys.contains("xbox") || keys.contains("microsoft") || title.contains("(xbox)")
+            case .epic:
+                return keys.contains("epic") || title.contains("(epic)")
+            case .other:
+                // Preserve games without recognized store metadata when "Tout cocher" is used.
+                return !StoreFilter.steam.includes(game)
+                    && !StoreFilter.xbox.includes(game)
+                    && !StoreFilter.epic.includes(game)
             }
         }
     }
@@ -37,7 +44,7 @@ struct CatalogView: View {
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         return games.filter { game in
             (query.isEmpty || game.title.localizedCaseInsensitiveContains(query))
-            && selectedStore.includes(game)
+            && selectedStores.contains(where: { $0.includes(game) })
         }
     }
 
@@ -55,15 +62,6 @@ struct CatalogView: View {
                                 .foregroundStyle(.secondary)
                         }
                         Spacer()
-                        Menu {
-                            ForEach(StoreFilter.allCases) { filter in
-                                Button(filter.rawValue) { selectedStore = filter }
-                            }
-                        } label: {
-                            Label(selectedStore.rawValue, systemImage: "line.3.horizontal.decrease.circle")
-                        }
-                        .buttonStyle(.bordered)
-
                         Button {
                             Task { await onRefresh() }
                         } label: {
@@ -71,6 +69,42 @@ struct CatalogView: View {
                         }
                         .buttonStyle(.bordered)
                         .disabled(isLoading)
+                    }
+
+                    // Multi-select storefront controls (tvOS focusable with Siri Remote or gamepad).
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack {
+                            Text("Boutiques")
+                                .font(.headline)
+                                .foregroundStyle(.white)
+                            Spacer()
+                            Button {
+                                selectedStores = Set(StoreFilter.allCases)
+                            } label: {
+                                Label("Tout cocher", systemImage: "checkmark.square.fill")
+                            }
+                            .buttonStyle(.bordered)
+                            .disabled(selectedStores.count == StoreFilter.allCases.count)
+                        }
+                        HStack(spacing: 12) {
+                            ForEach(StoreFilter.allCases) { store in
+                                Button {
+                                    if selectedStores.contains(store) {
+                                        selectedStores.remove(store)
+                                    } else {
+                                        selectedStores.insert(store)
+                                    }
+                                } label: {
+                                    Label(
+                                        store.rawValue,
+                                        systemImage: selectedStores.contains(store)
+                                            ? "checkmark.square.fill" : "square"
+                                    )
+                                }
+                                .buttonStyle(.bordered)
+                                .tint(selectedStores.contains(store) ? BoosteroidTheme.violet : .gray)
+                            }
+                        }
                     }
 
                     if let error {
@@ -85,6 +119,15 @@ struct CatalogView: View {
                                 .foregroundStyle(.secondary)
                         }
                         .padding(.top, 50)
+                    } else if selectedStores.isEmpty {
+                        VStack(spacing: 12) {
+                            Text("Aucune boutique sélectionnée")
+                                .font(.title2.bold())
+                            Text("Coche Steam, Xbox, Epic Games ou Autres, ou utilise Tout cocher.")
+                                .foregroundStyle(.secondary)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, 70)
                     } else if filteredGames.isEmpty {
                         ContentUnavailableView.search(text: searchText)
                             .frame(maxWidth: .infinity)
