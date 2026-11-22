@@ -4,6 +4,9 @@ struct SettingsView: View {
     @Environment(AuthManager.self) var authManager
     @Environment(GamesViewModel.self) var viewModel
     @State private var showGameAccounts = false
+    @AppStorage("boosteroid.previewVideosEnabled") private var previewVideosEnabled = false
+    @AppStorage("boosteroid.launch.lastCheckpoint") private var lastLaunchCheckpoint = "Aucune tentative enregistrée"
+    @AppStorage("boosteroid.launch.inProgress") private var launchInProgress = false
 
     private let resolutions: [(String, String)] = [
         ("720p", "1280x720"), ("1080p", "1920x1080"),
@@ -95,11 +98,31 @@ struct SettingsView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
+                section("Sécurité du lancement") {
+                    SettingsToggle("Aperçus vidéo animés (expérimental)", isOn: $previewVideosEnabled)
+                    Text("Désactivés par défaut pour limiter le chevauchement entre les bandes-annonces et le décodeur du jeu. Les fiches conservent leur illustration et leur description.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    if previewVideosEnabled {
+                        Text("Si l'application se ferme au lancement d'un jeu, désactive cette option avant de réessayer.")
+                            .font(.caption)
+                            .foregroundStyle(.orange)
+                    }
+                }
                 section("Diagnostics") {
                     SettingsToggle("Afficher les diagnostics pendant le jeu", isOn: $viewModel.streamSettings.showStatsOverlay)
                     Text("Masqués par défaut. Ils peuvent être activés temporairement depuis le menu de la session.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                    Text("Dernière étape de lancement : " + lastLaunchCheckpoint)
+                        .font(.callout)
+                        .foregroundStyle(launchInProgress ? .orange : .secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    if launchInProgress {
+                        Text("La dernière tentative n'a pas enregistré de fermeture normale. Cela peut indiquer un crash, une coupure électrique ou une interruption tvOS ; ce n'est pas une preuve de crash.")
+                            .font(.caption)
+                            .foregroundStyle(.orange)
+                    }
                 }
                 section("Région du serveur") {
                     SettingsToggle("Autoriser les serveurs éloignés", isOn: allowDistantRegionsBinding)
