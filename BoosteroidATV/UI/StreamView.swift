@@ -87,7 +87,7 @@ struct StreamView: View {
     @State private var showKeyboard = false
     @State private var showTextEntry = false
     @State private var showAccountAutofill = false
-    /// The "Performance Overlay" pill's own Enable/Disable flyout.
+    /// The "Performances" pill's own Enable/Disable flyout.
     @State private var showPerformanceFlyout = false
     /// nil = follow the session's saved Settings value; set once the user
     /// flips it from the in-stream Performance Overlay toggle, for the rest
@@ -123,7 +123,7 @@ struct StreamView: View {
             switch controller.state {
             case .idle, .connecting:
                 if let errorMessage {
-                    statusView(title: "Couldn't Start Session", message: errorMessage)
+                    statusView(title: "Impossible de démarrer la session", message: errorMessage)
                 } else {
                     loadingBackground
 
@@ -150,12 +150,12 @@ struct StreamView: View {
                         // so this stays hidden through the Queue/Machine
                         // Found stages and appears once machine setup starts.
                         if let connectedServerName {
-                            Text("Server: \(connectedServerName)")
+                            Text("Serveur : \(connectedServerName)")
                                 .font(.caption)
                                 .foregroundStyle(.white.opacity(0.6))
                         }
 
-                        Button("Cancel") { onDismiss() }
+                        Button("Annuler") { onDismiss() }
                             .buttonStyle(.bordered)
                             .tint(.secondary)
                             .padding(.top, 8)
@@ -234,9 +234,9 @@ struct StreamView: View {
                     topBarOverlay
                 }
             case .disconnected(let reason):
-                statusView(title: "Disconnected", message: reason)
+                statusView(title: "Déconnecté", message: reason)
             case .failed(let message):
-                statusView(title: "Stream Failed", message: message)
+                statusView(title: "Échec du streaming", message: message)
             }
         }
         .task { await start() }
@@ -445,7 +445,7 @@ struct StreamView: View {
     private var statsOverlay: some View {
         let mbps = Double(controller.stats.bitrateKbps) / 1000
         return HStack(spacing: 22) {
-            Text("STREAM")
+            Text("FLUX")
                 .font(.system(size: 13, weight: .bold, design: .rounded))
                 .tracking(1.6)
                 .foregroundStyle(BoosteroidTheme.violet)
@@ -453,23 +453,23 @@ struct StreamView: View {
                 .fill(controller.controlChannelAlive ? .green : .red)
                 .frame(width: 8, height: 8)
             statsDivider
-            statsItem("Bitrate", "\(String(format: "%.1f", mbps)) Mbps")
+            statsItem("Débit", "\(String(format: "%.1f", mbps)) Mbps")
             statsDivider
             // The size actually being decoded, which can differ from what
             // Settings requested — and if its aspect doesn't match the screen,
             // that's what puts black bars around the picture.
             if controller.stats.resolutionWidth > 0 {
-                statsItem("Size", "\(controller.stats.resolutionWidth)×\(controller.stats.resolutionHeight)")
+                statsItem("Résolution", "\(controller.stats.resolutionWidth)×\(controller.stats.resolutionHeight)")
                 statsDivider
             }
             statsItem("FPS", "\(controller.streamFps)")
             statsDivider
-            statsItem("Latency", "\(controller.rttMs) ms")
+            statsItem("Latence", "\(controller.rttMs) ms")
             statsDivider
             statsItem("État", streamingHealthLabel)
             if let connectedServerName {
                 statsDivider
-                statsItem("Server", connectedServerName)
+                statsItem("Serveur", connectedServerName)
             }
         }
         .padding(.horizontal, 24)
@@ -519,7 +519,7 @@ struct StreamView: View {
     // button apart from the Siri Remote's own Back button, and the user
     // chose to prioritize Start reaching the game, so Menu/Back is now a
     // no-op here on purpose. Disconnect (via Play/Pause -> this bar) is the
-    // only way out. No more "More Options" — Performance Overlay is a
+    // only way out. No more "Autres options" — Performance Overlay is a
     // top-level pill now that it's the only thing left in it.
 
     private var showStats: Bool { statsOverlayOverride ?? settings.showStatsOverlay }
@@ -539,7 +539,7 @@ struct StreamView: View {
                     //
                     // terminateSession now deliberately waits for the server to
                     // acknowledge by closing the socket, so this can take a
-                    // beat — hence the explicit "Ending session…" state rather
+                    // beat — hence the explicit "Fermeture de la session…" state rather
                     // than leaving the button looking unresponsive.
                     guard !isDisconnecting else { return }
                     isDisconnecting = true
@@ -549,7 +549,7 @@ struct StreamView: View {
                         onDismiss()
                     }
                 } label: {
-                    Label(isDisconnecting ? "Ending session…" : "Disconnect", systemImage: "xmark.circle")
+                    Label(isDisconnecting ? "Fermeture de la session…" : "Déconnexion", systemImage: "xmark.circle")
                 }
                 .disabled(isDisconnecting)
                 .buttonStyle(StreamControlButtonStyle(active: false))
@@ -557,7 +557,7 @@ struct StreamView: View {
                 Spacer()
 
                 HStack(spacing: 14) {
-                    topBarPill("Keyboard", systemImage: "keyboard") {
+                    topBarPill("Clavier", systemImage: "keyboard") {
                         showOverlay = false
                         showKeyboard = true
                     }
@@ -569,7 +569,7 @@ struct StreamView: View {
                         showOverlay = false
                         showAccountAutofill = true
                     }
-                    topBarPill("Pointer", systemImage: pointerMode ? "cursorarrow.click.2" : "cursorarrow",
+                    topBarPill("Pointeur", systemImage: pointerMode ? "cursorarrow.click.2" : "cursorarrow",
                                active: pointerMode) {
                         pointerMode.toggle()
                         showOverlay = false
@@ -579,11 +579,11 @@ struct StreamView: View {
                     // input back to the video surface immediately: Steam's
                     // overlay renders inside the stream itself, so it needs
                     // direct remote input from here on, not this app's menu.
-                    topBarPill("Steam Overlay", systemImage: "square.stack") {
+                    topBarPill("Interface Steam", systemImage: "square.stack") {
                         sendSteamOverlayHotkey()
                         showOverlay = false
                     }
-                    topBarPill("Performance Overlay", systemImage: "gauge.with.dots.needle.67percent",
+                    topBarPill("Performances", systemImage: "gauge.with.dots.needle.67percent",
                                active: showPerformanceFlyout) {
                         showPerformanceFlyout.toggle()
                     }
@@ -634,19 +634,19 @@ struct StreamView: View {
     }
 
     /// A smaller, fixed font for the flyout rows — the system's default
-    /// tvOS button text is large enough that "Performance Overlay" (with an
+    /// tvOS button text is large enough that "Performances" (with an
     /// icon) wrapped down to one character per line at this panel's width
     /// otherwise. Sizing text explicitly keeps these compact HUD rows on
     /// one line.
     private static let panelRowFont: Font = .system(size: 24, weight: .medium)
 
     /// The Performance Overlay pill's own Enable/Disable flyout — dropping
-    /// down from the pill itself now that "More Options" is gone (it was
+    /// down from the pill itself now that "Autres options" is gone (it was
     /// the only thing left in that submenu).
     private var performanceOverlayFlyout: some View {
         VStack(alignment: .leading, spacing: 4) {
-            performanceFlyoutRow("Enable", selected: showStats) { statsOverlayOverride = true }
-            performanceFlyoutRow("Disable", selected: !showStats) { statsOverlayOverride = false }
+            performanceFlyoutRow("Activer", selected: showStats) { statsOverlayOverride = true }
+            performanceFlyoutRow("Désactiver", selected: !showStats) { statsOverlayOverride = false }
         }
         .padding(.vertical, 8)
         .frame(width: 260)
@@ -686,7 +686,7 @@ struct StreamView: View {
         VStack(spacing: 24) {
             Text(title).font(.title.weight(.semibold)).foregroundStyle(.white)
             Text(message).foregroundStyle(.secondary).multilineTextAlignment(.center).padding(.horizontal, 80)
-            Button("Close") { onDismiss() }
+            Button("Fermer") { onDismiss() }
                 .buttonStyle(.bordered)
                 .tint(.gray)
         }
@@ -761,17 +761,26 @@ struct StreamView: View {
         switch currentStageIndex {
         case 0:
             if let queuePosition {
-                return "Queue position: \(queuePosition)" + (queueEta.map { " — ~\($0)s" } ?? "")
+                return "Position dans la file : \(queuePosition)" + (queueEta.map { " — ~\($0)s" } ?? "")
             }
-            return "Waiting in queue…"
+            return "En attente dans la file…"
         case 1:
-            return "Machine found — confirming session…"
+            return "Machine trouvée — confirmation de la session…"
         default:
             if isPreparingFinished {
-                return "Machine ready — loading the game…"
+                return "Machine prête — chargement du jeu…"
             }
-            return controller.stage.isEmpty ? "Preparing the machine…" : controller.stage
+            return controller.stage.isEmpty ? "Préparation de la machine…" : localizedStreamStage(controller.stage)
         }
+    }
+
+    /// Only the UI string is translated: the original stage stays unchanged for protocol checks.
+    private func localizedStreamStage(_ stage: String) -> String {
+        if stage.contains("Offer accepted") { return "Connexion acceptée — réception de l'image…" }
+        if stage.localizedCaseInsensitiveContains("waiting for video") { return "En attente du flux vidéo…" }
+        if stage.localizedCaseInsensitiveContains("connecting") { return "Connexion en cours…" }
+        if stage.localizedCaseInsensitiveContains("negotiat") { return "Négociation du flux…" }
+        return "Préparation du streaming…"
     }
 
     private func start() async {
@@ -906,7 +915,7 @@ struct StreamView: View {
                 //   after it, status is "UN" with no gw for a few seconds, then
                 //   flips to "LI" with gw (e.g. sp6). Without that call the
                 //   reservation just sits there — which is this app's
-                //   "Machine ready — waiting for host…" hang.
+                //   "Machine prête — attente du serveur…" hang.
                 //
                 // So the claim IS required here. An earlier pass removed it
                 // after seeing only the no-queue path; that was wrong.
@@ -984,7 +993,7 @@ struct VirtualKeyboardView: View {
                 }
                 keyButton("-") { send(vk: VK.minus) }
                 keyButton("=") { send(vk: VK.equals) }
-                keyButton("Backspace", width: 100, tint: .red) { send(vk: VK.back) }
+                keyButton("Effacer ←", width: 100, tint: .red) { send(vk: VK.back) }
             }
             HStack(spacing: 6) {
                 keyButton("Tab", width: 72) { send(vk: VK.tab) }
@@ -1005,10 +1014,10 @@ struct VirtualKeyboardView: View {
                 }
                 keyButton(";") { send(vk: VK.semicolon) }
                 keyButton("'") { send(vk: VK.quote) }
-                keyButton("Enter", width: 100) { send(vk: VK.enter) }
+                keyButton("Entrée", width: 100) { send(vk: VK.enter) }
             }
             HStack(spacing: 6) {
-                keyButton(shifted ? "Shift ON" : "Shift", width: 88) { shifted.toggle() }
+                keyButton(shifted ? "Maj activée" : "Maj", width: 88) { shifted.toggle() }
                 ForEach(bottomRow, id: \.self) { key in
                     keyButton(shifted ? key : key.lowercased()) {
                         send(vk: UInt16(key.unicodeScalars.first!.value))
@@ -1019,13 +1028,13 @@ struct VirtualKeyboardView: View {
                 keyButton("/") { send(vk: VK.slash) }
             }
             HStack(spacing: 6) {
-                keyButton("Esc") { send(vk: VK.escape) }
-                keyButton("Space", width: 260) { send(vk: VK.space) }
+                keyButton("Échap") { send(vk: VK.escape) }
+                keyButton("Espace", width: 260) { send(vk: VK.space) }
                 keyButton("←") { send(vk: VK.left) }
                 keyButton("↑") { send(vk: VK.up) }
                 keyButton("↓") { send(vk: VK.down) }
                 keyButton("→") { send(vk: VK.right) }
-                keyButton("Close", width: 72, tint: .red) { onClose() }
+                keyButton("Fermer", width: 72, tint: .red) { onClose() }
             }
             HStack(spacing: 6) {
                 keyButton("@") { sendShifted(vk: 0x32) }
