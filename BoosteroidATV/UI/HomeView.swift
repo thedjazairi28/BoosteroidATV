@@ -144,11 +144,15 @@ struct HomeView: View {
 }
 
 struct GameOverviewView: View {
+    @Environment(AuthManager.self) private var authManager
+    @Environment(GamesViewModel.self) private var viewModel
     let game: GameInfo
     let isFavorite: Bool
     let onPlay: () -> Void
     let onToggleFavorite: () -> Void
     let onDismiss: () -> Void
+
+    private var shownGame: GameInfo { viewModel.enrichedGame(game) }
 
     var body: some View {
         ZStack {
@@ -172,19 +176,19 @@ struct GameOverviewView: View {
 
                 HStack(alignment: .bottom) {
                     VStack(alignment: .leading, spacing: 16) {
-                        Text(game.title)
+                        Text(shownGame.title)
                             .font(.system(size: 54, weight: .bold))
                             .foregroundStyle(.white)
                             .shadow(radius: 6)
                             .lineLimit(2)
 
                         Label(
-                            game.isInLibrary ? "Dans ma bibliothèque"
-                                : (game.requiresInstallation ? "Installation nécessaire" : "Prêt à jouer"),
-                            systemImage: game.requiresInstallation ? "square.and.arrow.down" : "checkmark.circle.fill"
+                            shownGame.isInLibrary ? "Dans ma bibliothèque"
+                                : (shownGame.requiresInstallation ? "Installation nécessaire" : "Prêt à jouer"),
+                            systemImage: shownGame.requiresInstallation ? "square.and.arrow.down" : "checkmark.circle.fill"
                         )
                         .font(.title3.weight(.semibold))
-                        .foregroundStyle(game.requiresInstallation ? .orange : BoosteroidTheme.accent)
+                        .foregroundStyle(shownGame.requiresInstallation ? .orange : BoosteroidTheme.accent)
 
                         VStack(alignment: .leading, spacing: 12) {
                             Text("À propos du jeu")
@@ -194,13 +198,13 @@ struct GameOverviewView: View {
                                 .foregroundStyle(.white.opacity(0.9))
                                 .lineLimit(5)
                                 .fixedSize(horizontal: false, vertical: true)
-                            if !game.genres.isEmpty {
+                            if !shownGame.genres.isEmpty {
                                 Text("Genres : " + GameDetailsFR.genres(for: game))
                                     .font(.callout)
                                     .foregroundStyle(.white.opacity(0.8))
                                     .lineLimit(2)
                             }
-                            if !game.storeIdentifiers.isEmpty {
+                            if !shownGame.storeIdentifiers.isEmpty {
                                 Text("Boutiques : " + GameDetailsFR.stores(for: game))
                                     .font(.callout)
                                     .foregroundStyle(.white.opacity(0.8))
@@ -212,8 +216,8 @@ struct GameOverviewView: View {
                         HStack(spacing: 16) {
                             Button(action: onPlay) {
                                 Label(
-                                    game.requiresInstallation ? "Installer et jouer" : "Jouer",
-                                    systemImage: game.requiresInstallation ? "square.and.arrow.down" : "play.fill"
+                                    shownGame.requiresInstallation ? "Installer et jouer" : "Jouer",
+                                    systemImage: shownGame.requiresInstallation ? "square.and.arrow.down" : "play.fill"
                                 )
                                 .frame(minWidth: 120)
                             }
@@ -248,11 +252,14 @@ struct GameOverviewView: View {
             .padding(.vertical, 86)
         }
         .onExitCommand(perform: onDismiss)
+        .task(id: game.id) {
+            await viewModel.loadGameDetails(game, authManager: authManager)
+        }
     }
 
     @ViewBuilder
     private var heroArtwork: some View {
-        if let value = game.heroBannerUrl, let url = URL(string: value) {
+        if let value = shownGame.heroBannerUrl, let url = URL(string: value) {
             AsyncImage(url: url) { phase in
                 if case .success(let image) = phase {
                     image.resizable().aspectRatio(contentMode: .fill)
@@ -411,6 +418,7 @@ private struct LibraryCarouselRequest: Identifiable {
 }
 
 private struct LibraryCarouselView: View {
+    @Environment(AuthManager.self) private var authManager
     private enum ActionFocus: Hashable { case play, favorite }
 
     let request: LibraryCarouselRequest
@@ -429,7 +437,7 @@ private struct LibraryCarouselView: View {
         _currentIndex = State(initialValue: request.games.firstIndex { $0.id == request.startId } ?? 0)
     }
 
-    private var game: GameInfo { request.games[currentIndex] }
+    private var game: GameInfo { viewModel.enrichedGame(request.games[currentIndex]) }
 
     var body: some View {
         GeometryReader { geo in
@@ -493,6 +501,9 @@ private struct LibraryCarouselView: View {
         }
         .onExitCommand(perform: onDismiss)
         .defaultFocus($actionFocus, .play)
+        .task(id: request.games[currentIndex].id) {
+            await viewModel.loadGameDetails(request.games[currentIndex], authManager: authManager)
+        }
     }
 
     private var cardTransition: AnyTransition {
@@ -523,68 +534,140 @@ private struct LibraryCarouselView: View {
     }
 
     private func overviewCard(_ game: GameInfo) -> some View {
-        ZStack(alignment: .bottomLeading) {
-            carouselArtwork(game).frame(maxWidth: .infinity, maxHeight: .infinity).clipped()
-            LinearGradient(colors: [.clear, .black.opacity(0.25), .black.opacity(0.94)], startPoint: .top, endPoint: .bottom)
-            HStack(alignment: .bottom) {
-                VStack(alignment: .leading, spacing: 14) {
-                    Text(game.title).font(.system(size: 58, weight: .bold)).lineLimit(2)
+        ZStack {
+            carouselArtwork(game)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .clipped()
+                .overlay(Color.black.opacity(0.67))
+
+            HStack(alignment: .center, spacing: 38) {
+                posterArtwork(game)
+                    .frame(width: 285, height: 405)
+                    .background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 14))
+                    .clipShape(RoundedRectangle(cornerRadius: 14))
+
+                VStack(alignment: .leading, spacing: 15) {
+                    Text("FICHE DU JEU")
+                        .font(.system(size: 17, weight: .bold))
+                        .tracking(2.0)
+                        .foregroundStyle(BoosteroidTheme.accent)
+
+                    Text(game.title)
+                        .font(.system(size: 43, weight: .bold))
+                        .foregroundStyle(.white)
+                        .lineLimit(2)
+
+                    Label("Dans ma bibliothèque", systemImage: "checkmark.circle.fill")
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundStyle(BoosteroidTheme.accent)
+
                     if !game.genres.isEmpty {
                         Text(GameDetailsFR.genres(for: game))
-                            .font(.system(size: 27))
-                            .foregroundStyle(.white.opacity(0.75))
+                            .font(.system(size: 20))
+                            .foregroundStyle(.white.opacity(0.82))
                             .lineLimit(2)
                     }
+
                     Text("À propos du jeu")
                         .font(.system(size: 23, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .padding(.top, 10)
+
                     Text(GameDetailsFR.summary(for: game))
-                        .font(.system(size: 27))
-                        .foregroundStyle(.white.opacity(0.82))
-                        .lineLimit(4)
-                        .frame(maxWidth: 810, alignment: .leading)
+                        .font(.system(size: 21))
+                        .foregroundStyle(.white.opacity(0.90))
+                        .lineLimit(5)
+                        .fixedSize(horizontal: false, vertical: true)
+
                     if !game.storeIdentifiers.isEmpty {
                         Text("Boutiques : " + GameDetailsFR.stores(for: game))
-                            .font(.system(size: 21))
-                            .foregroundStyle(.white.opacity(0.75))
+                            .font(.system(size: 18))
+                            .foregroundStyle(.white.opacity(0.77))
+                            .lineLimit(2)
                     }
-                    Label("Dans ma bibliothèque", systemImage: "checkmark.circle.fill")
-                        .font(.system(size: 28, weight: .semibold))
-                        .foregroundStyle(BoosteroidTheme.accent)
-                    HStack(spacing: 16) {
+
+                    HStack(alignment: .top, spacing: 26) {
+                        metadata("DÉVELOPPEUR", game.developer)
+                        metadata("ÉDITEUR", game.publisher)
+                        metadata("CLASSIFICATION", game.rating)
+                    }
+
+                    Spacer(minLength: 6)
+
+                    HStack(spacing: 18) {
                         Button { onPlay(game) } label: {
                             Label("Jouer", systemImage: "play.fill")
-                                .font(.system(size: 28, weight: .medium))
-                                .frame(minWidth: 110)
+                                .font(.system(size: 22, weight: .medium))
+                                .frame(minWidth: 100)
                         }
-                            .buttonStyle(.borderedProminent).tint(BoosteroidTheme.violet)
-                            .focused($actionFocus, equals: .play)
+                        .buttonStyle(.borderedProminent)
+                        .tint(BoosteroidTheme.violet)
+                        .focused($actionFocus, equals: .play)
+
                         Button { viewModel.toggleFavorite(game) } label: {
-                            Label(viewModel.isFavorite(game) ? "Retirer des favoris" : "Ajouter aux favoris",
-                                  systemImage: viewModel.isFavorite(game) ? "star.fill" : "star")
-                                .font(.system(size: 28, weight: .medium))
+                            Label(
+                                viewModel.isFavorite(game) ? "Retirer des favoris" : "Ajouter aux favoris",
+                                systemImage: viewModel.isFavorite(game) ? "star.fill" : "star"
+                            )
+                            .font(.system(size: 21, weight: .medium))
                         }
-                        .buttonStyle(.bordered).tint(.gray)
+                        .buttonStyle(.bordered)
+                        .tint(.gray)
                         .focused($actionFocus, equals: .favorite)
                     }
                 }
-                Spacer()
-                VStack(alignment: .trailing, spacing: 20) {
-                    metadata("DÉVELOPPEUR", game.developer)
-                    metadata("ÉDITEUR", game.publisher)
-                    metadata("CLASSIFICATION", game.rating)
-                }
-            }.padding(80)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .padding(42)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+            .background(Color.black.opacity(0.33), in: RoundedRectangle(cornerRadius: 20))
+            .padding(34)
         }
         .contentShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 
     @ViewBuilder private func metadata(_ label: String, _ value: String?) -> some View {
         if let value, !value.isEmpty {
-            VStack(alignment: .trailing, spacing: 3) {
-                Text(label).font(.system(size: 20, weight: .bold)).foregroundStyle(.secondary)
-                Text(value).font(.system(size: 28)).foregroundStyle(.white)
+            VStack(alignment: .leading, spacing: 5) {
+                Text(label)
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundStyle(.white.opacity(0.62))
+                Text(value)
+                    .font(.system(size: 18))
+                    .foregroundStyle(.white)
+                    .lineLimit(2)
             }
         }
+    }
+
+    @ViewBuilder private func posterArtwork(_ game: GameInfo) -> some View {
+        if let value = game.boxArtUrl ?? game.heroBannerUrl, let url = URL(string: value) {
+            AsyncImage(url: url) { phase in
+                if case .success(let image) = phase {
+                    image.resizable().scaledToFit()
+                } else {
+                    posterPlaceholder(game)
+                }
+            }
+        } else {
+            posterPlaceholder(game)
+        }
+    }
+
+    private func posterPlaceholder(_ game: GameInfo) -> some View {
+        BoosteroidTheme.cardGradient
+            .overlay {
+                VStack(spacing: 18) {
+                    Image(systemName: "gamecontroller.fill")
+                        .font(.system(size: 50))
+                    Text(game.title)
+                        .font(.headline)
+                        .lineLimit(3)
+                        .multilineTextAlignment(.center)
+                }
+                .foregroundStyle(.white)
+                .padding()
+            }
     }
 
     @ViewBuilder private func carouselArtwork(_ game: GameInfo) -> some View {
