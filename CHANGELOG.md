@@ -14,11 +14,35 @@
 | Base d'origine | `main` | `623c42b` | Version amont disponible | **Testée** : installation et streaming sur Apple TV |
 | V1 — Catalogue unifié | `feature/unified-catalog-v1` | `a788071` | **Réussie** le 20/11/2026 | **Non confirmé** |
 | V2 — Smart Experience | `feature/v2-smart-experience` | `fd60053` | **Réussie** le 20/11/2026 | **Non confirmé** |
+| V2.3.1 — Diagnostic des aperçus vidéo (expérimental) | `feature/v2.3.1-video-diagnostics` | `5dc7872` | [Build #45024010277](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45024010277), en cours | **Non testé sur Apple TV** |
 | V2.3 — Vidéo silencieuse automatique et résumé FR (expérimental) | `feature/v2.3-french-trailers` | `244fc60` | **Réussie** le 22/11/2026 | **Non testé sur Apple TV** |
 | V2.2 — Filtres et fiches enrichies, interface FR (expérimental) | `feature/v2.2-multi-store-filters` | `e4b1ba3` | **Réussie** le 22/11/2026 | **Non testé sur Apple TV** |
 | V2.1 — Stability | `feature/v2.1-stability` | `17df76b` | **Réussie** le 20/11/2026 | **3 OK, 3 KO** — 22/11/2026 (ligne rouge disparue, origine inconnue) |
 
 **Important :** V2 inclut V1, V2.1 inclut V1 + V2, V2.2 part de V2.1 et V2.3 part de V2.2. La branche `main` conserve le code de base : **aucune des branches expérimentales n'est fusionnée dans `main`** à la date de ce journal.
+
+## 22 novembre 2026 — V2.3.1 « Diagnostic des vidéos » (correctif expérimental)
+
+**Motif :** retour de test Apple TV : **aucune vidéo ne démarre à l'ouverture d'une fiche de jeu dans la V2.3**. Cause réelle non encore identifiée.  
+**Branche :** [feature/v2.3.1-video-diagnostics](https://github.com/thedjazairi28/BoosteroidATV/tree/feature/v2.3.1-video-diagnostics)  
+**Diff :** [V2.3 → V2.3.1](https://github.com/thedjazairi28/BoosteroidATV/compare/feature/v2.3-french-trailers...feature/v2.3.1-video-diagnostics)  
+**Build :** [GitHub Actions #45024010277](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45024010277).  
+**Tests sur Apple TV :** non exécutés sur cette version.
+
+### Corrections / diagnostics
+
+- La V2.3 ne remontait pas les erreurs de recherche Steam ni l'absence de sources : le fond statique masquait tout échec. Affichage du **statut précis dans la fiche**, en français.
+- **Bouton « Réessayer la vidéo »** pour rejouer une recherche lorsqu'aucune source n'a été trouvée.
+- Pour le cas de référence **Red Dead Redemption 2**, accès direct à l'ID Steam public connu `1174180` pour éviter que l'échec de la recherche par titre bloque la récupération du trailer.
+- Distinction des cas : recherche Steam indisponible, jeu non retrouvé, réponse `appdetails` refusée/non conforme, absence de clips, sources MP4 non reconnues.
+- Remontée d'une erreur lorsque le lecteur AVQueuePlayer passe à l'état `failed`.
+- Nettoyage des ressources de lecture à la fermeture sans manipuler la file d'attente de l'AVPlayerLooper encore active.
+
+### Limites
+
+- Le fonctionnement réel de l'API Steam sur **cette Apple TV et ce réseau** n'a pas été observé : il reste possible qu'un jeu ne fournisse pas de MP4 utilisable.
+- Un build réussi confirme la compilation, **pas** l'accès au catalogue Steam ni le décodage vidéo.
+- **Prochain test demandé :** installer la V2.3.1, ouvrir la fiche Red Dead Redemption 2, lire le message de diagnostic visible, observer si la vidéo est animée ou statique.
 
 ## 22 novembre 2026 — V2.3 « Aperçus animés silencieux » (expérimental)
 
