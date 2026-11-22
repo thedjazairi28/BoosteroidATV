@@ -445,7 +445,7 @@ nonisolated struct BoosteroidPaginatedApplications: Decodable {
     }
 }
 
-nonisolated struct GameInfo: Identifiable, Equatable {
+nonisolated struct GameInfo: Identifiable, Equatable, Codable {
     let id: String
     let title: String
     let boxArtUrl: String?
