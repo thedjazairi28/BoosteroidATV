@@ -109,6 +109,10 @@ struct MainTabView: View {
 
     private func showDetails(_ game: GameInfo, origin: String) {
         launchTrace.record("Fiche sélectionnée (" + origin + ") : " + String(game.title.prefix(90)))
+        // A failure can occur before SwiftUI calls GameOverviewView.onAppear.
+        // Persist this checkpoint separately from a real streaming launch.
+        UserDefaults.standard.set("Ouverture de fiche : " + String(game.title.prefix(70)),
+                                  forKey: "boosteroid.launch.lastCheckpoint")
         selectedGame = game
     }
 
