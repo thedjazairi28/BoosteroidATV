@@ -15,6 +15,8 @@ struct SettingsView: View {
     @State private var isSendingIssue = false
     @State private var issueReportStatus: String?
     @State private var issueReportURL: String?
+    @State private var showKeychainFeedback = false
+    @State private var keychainFeedbackMessage = ""
 
     private let resolutions: [(String, String)] = [
         ("720p", "1280x720"), ("1080p", "1920x1080"),
@@ -186,14 +188,17 @@ struct SettingsView: View {
                                 : (issueTokenStored
                                     ? "Remplacement impossible : le jeton précédent est conservé."
                                     : "Échec du stockage local : réessaie sans désinstaller l'application.")
+                            keychainFeedbackMessage = issueReportStatus ?? "État du Keychain indisponible."
+                            showKeychainFeedback = true
                         }
                         .disabled(newIssueToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                         .buttonStyle(.bordered)
                         Button("Vérifier le Keychain") {
-                            issueTokenStored = DiagnosticIssueCredentials.load() != nil
-                            issueReportStatus = issueTokenStored
-                                ? "Jeton présent : il sera réutilisé par cette installation."
-                                : "Aucun jeton retrouvé dans le Keychain de cette installation."
+                            let verification = DiagnosticIssueCredentials.checkStatus()
+                            issueTokenStored = verification.available
+                            issueReportStatus = verification.message
+                            keychainFeedbackMessage = verification.message
+                            showKeychainFeedback = true
                         }
                         .buttonStyle(.bordered)
                         if issueTokenStored {
@@ -209,6 +214,13 @@ struct SettingsView: View {
                             .tint(.red)
                         }
                     }
+                    if let issueReportStatus {
+                        Label(issueReportStatus,
+                              systemImage: issueTokenStored ? "checkmark.shield.fill" : "exclamationmark.triangle.fill")
+                            .font(.callout.weight(.semibold))
+                            .foregroundStyle(issueTokenStored ? Color.green : Color.orange)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                     Text(issueTokenStored
                          ? "Jeton enregistré localement. Il n'est ni affiché ni inclus dans le rapport. Le premier envoi vérifiera aussi les droits GitHub."
                          : "Entre un jeton GitHub à accès limité, puis sélectionne Enregistrer le jeton. Le secret ne figure jamais dans l'IPA.")
@@ -222,12 +234,6 @@ struct SettingsView: View {
                     }
                     .buttonStyle(.borderedProminent)
                     .disabled(isSendingIssue || !issueTokenStored || launchTrace.entries.isEmpty)
-                    if let issueReportStatus {
-                        Text(issueReportStatus)
-                            .font(.callout)
-                            .foregroundStyle(.white)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
                     if let issueReportURL {
                         Text(issueReportURL)
                             .font(.caption)
@@ -316,6 +322,11 @@ struct SettingsView: View {
         }
         .onAppear {
             issueTokenStored = DiagnosticIssueCredentials.load() != nil
+        }
+        .alert("Diagnostic Keychain", isPresented: $showKeychainFeedback) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(keychainFeedbackMessage)
         }
     }
 
