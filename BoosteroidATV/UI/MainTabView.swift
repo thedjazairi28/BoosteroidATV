@@ -8,6 +8,7 @@ struct MainTabView: View {
     @State private var selectedGame: GameInfo?
     @State private var pendingGameToPlay: GameInfo?
     @State private var selectedTab: AppTab = .home
+    @State private var launchTrace = LaunchTrace.shared
 
     private enum AppTab: Hashable {
         case home, catalog, library, accounts, settings, help
@@ -67,6 +68,7 @@ struct MainTabView: View {
             )
         }
         .environment(viewModel)
+        .onAppear { launchTrace.record("Application ouverte : menu principal") }
         .task { await viewModel.load(authManager: authManager) }
         .onChange(of: viewModel.streamSettings) { viewModel.saveSettings() }
         .fullScreenCover(item: $gameToPlay) { game in
@@ -96,8 +98,9 @@ struct MainTabView: View {
 
     private func launch(_ game: GameInfo) {
         guard gameToPlay == nil else { return }
-        // Keep a minimal local checkpoint to identify the stage reached if
-        // tvOS terminates the process; never write tokens, credentials or IDs.
+        // Store a friendly game title only. Never persist a user token, email,
+        // session identifier or network payload in the diagnostics.
+        launchTrace.record("Lancement demandé : " + String(game.title.prefix(90)))
         UserDefaults.standard.set(true, forKey: "boosteroid.launch.inProgress")
         UserDefaults.standard.set("Ouverture de l'écran de streaming", forKey: "boosteroid.launch.lastCheckpoint")
         viewModel.markPlayed(game)
