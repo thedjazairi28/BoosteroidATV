@@ -7,6 +7,8 @@ struct SettingsView: View {
     @AppStorage("boosteroid.previewVideosEnabled") private var previewVideosEnabled = false
     @AppStorage("boosteroid.launch.lastCheckpoint") private var lastLaunchCheckpoint = "Aucune tentative enregistrée"
     @AppStorage("boosteroid.launch.inProgress") private var launchInProgress = false
+    @AppStorage("boosteroid.launch.showLiveLog") private var showLiveLog = true
+    @State private var launchTrace = LaunchTrace.shared
 
     private let resolutions: [(String, String)] = [
         ("720p", "1280x720"), ("1080p", "1920x1080"),
@@ -110,19 +112,56 @@ struct SettingsView: View {
                     }
                 }
                 section("Diagnostics") {
-                    SettingsToggle("Afficher les diagnostics pendant le jeu", isOn: $viewModel.streamSettings.showStatsOverlay)
-                    Text("Masqués par défaut. Ils peuvent être activés temporairement depuis le menu de la session.")
+                    SettingsToggle("Journal de lancement à l'écran", isOn: $showLiveLog)
+                    Text("Affiche les principales étapes de lancement en direct. Les 80 derniers événements restent consultables ici après une fermeture inattendue.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                    SettingsToggle("Afficher les performances pendant le jeu", isOn: $viewModel.streamSettings.showStatsOverlay)
+
                     Text("Dernière étape de lancement : " + lastLaunchCheckpoint)
                         .font(.callout)
                         .foregroundStyle(launchInProgress ? .orange : .secondary)
                         .fixedSize(horizontal: false, vertical: true)
                     if launchInProgress {
-                        Text("La dernière tentative n'a pas enregistré de fermeture normale. Cela peut indiquer un crash, une coupure électrique ou une interruption tvOS ; ce n'est pas une preuve de crash.")
+                        Text("La dernière tentative n'a pas enregistré de fermeture normale (crash ou interruption possibles).")
                             .font(.caption)
                             .foregroundStyle(.orange)
                     }
+
+                    HStack {
+                        Text("JOURNAL DES ÉVÉNEMENTS")
+                            .font(.headline)
+                        Spacer()
+                        Button("Effacer") {
+                            launchTrace.clear()
+                        }
+                        .buttonStyle(.bordered)
+                        .disabled(launchTrace.entries.isEmpty)
+                    }
+                    if launchTrace.entries.isEmpty {
+                        Text("Aucun événement enregistré. Lance un jeu pour alimenter le journal.")
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                    } else {
+                        ForEach(Array(launchTrace.entries.suffix(35).reversed())) { entry in
+                            HStack(alignment: .firstTextBaseline, spacing: 14) {
+                                Text(entry.time, format: .dateTime.hour().minute().second())
+                                    .foregroundStyle(.secondary)
+                                    .frame(width: 116, alignment: .leading)
+                                Text(entry.level)
+                                    .foregroundStyle(entry.level == "ERREUR" ? Color.red
+                                        : entry.level == "OK" ? Color.green : Color.yellow)
+                                    .frame(width: 90, alignment: .leading)
+                                Text(entry.message)
+                                    .foregroundStyle(.white)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                            .font(.system(size: 16, design: .monospaced))
+                        }
+                    }
+                    Text("Sécurité : seuls les jalons techniques définis dans le code sont enregistrés. Aucun identifiant, mot de passe, jeton, URL privée ou contenu brut de réponse réseau n'est inclus.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
                 section("Région du serveur") {
                     SettingsToggle("Autoriser les serveurs éloignés", isOn: allowDistantRegionsBinding)
