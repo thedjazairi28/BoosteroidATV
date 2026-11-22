@@ -14,7 +14,7 @@
 | Base d'origine | `main` | `623c42b` | Version amont disponible | **Testée** : installation et streaming sur Apple TV |
 | V1 — Catalogue unifié | `feature/unified-catalog-v1` | `a788071` | **Réussie** le 20/11/2026 | **Non confirmé** |
 | V2 — Smart Experience | `feature/v2-smart-experience` | `fd60053` | **Réussie** le 20/11/2026 | **Non confirmé** |
-| V2.4 — Souris virtuelle avec manette (expérimental) | `feature/v2.4-gamepad-pointer` | `fd7d78a` | **En cours** — [#45026265985](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45026265985) | **Non testé sur Apple TV** |
+| V2.4 — Souris virtuelle avec manette (expérimental) | `feature/v2.4-gamepad-pointer` | `fd7d78a` | **Réussie** — [#45026265985](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45026265985) | **Non testé sur Apple TV** |
 | V2.3.3 — Fiches épurées (expérimental) | `feature/v2.3.3-clean-game-cards` | `98a809c` | **En cours** — compilation GitHub Actions | **Non testé sur Apple TV** |
 | V2.3.2 — Lecteur HLS Steam (expérimental) | `feature/v2.3.2-hls-trailers` | `b95d82a` | **Réussie** — [#45024722519](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45024722519) | **Non testé sur Apple TV** |
 | V2.3.1 — Diagnostic des aperçus vidéo (expérimental) | `feature/v2.3.1-video-diagnostics` | `dcc7ac6` | **Réussie** le 22/11/2026 — [#45024136324](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45024136324) | **Non testé sur Apple TV** |
@@ -30,7 +30,7 @@
 
 **Branche :** [feature/v2.4-gamepad-pointer](https://github.com/thedjazairi28/BoosteroidATV/tree/feature/v2.4-gamepad-pointer)  
 **Comparaison :** [V2.3.3 → V2.4](https://github.com/thedjazairi28/BoosteroidATV/compare/feature/v2.3.3-clean-game-cards...feature/v2.4-gamepad-pointer)  
-**Compilation :** [GitHub Actions #45026265985](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45026265985) — **en cours** lors de l'ajout du journal.  
+**Compilation :** [GitHub Actions #45026265985](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45026265985) — **réussie**. Artifact : `BoosteroidATV-v2-4-gamepad-pointer-unsigned` (archive ZIP contenant l'IPA), expiration **29/11/2026**.  
 **Tests Apple TV :** non effectués sur la V2.4.
 
 ### Fonctionnement
