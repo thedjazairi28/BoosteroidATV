@@ -16,6 +16,7 @@ on:
       - feature/v2.4.3-live-logs
       - feature/v2.4.4-github-reports
       - feature/v2.4.5-prelaunch-trace
+      - feature/v2.4.6-keychain-reliability
   workflow_dispatch:
 
 permissions:
@@ -36,12 +37,12 @@ jobs:
       - name: Build unsigned IPA
         run: |
           chmod +x scripts/build-ipa.sh
-          VERSION=2026.11.22.12 ./scripts/build-ipa.sh
+          VERSION=2026.11.22.13 ./scripts/build-ipa.sh
 
       - name: Upload unsigned IPA for atvloadly
         uses: actions/upload-artifact@v4
         with:
-          name: BoosteroidATV-v2-4-5-prelaunch-trace-unsigned
+          name: BoosteroidATV-v2-4-6-keychain-reliability-unsigned
           path: build/*.ipa
           if-no-files-found: error
           retention-days: 7

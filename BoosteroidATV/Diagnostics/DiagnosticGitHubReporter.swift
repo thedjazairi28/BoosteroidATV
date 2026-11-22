@@ -23,19 +23,27 @@ enum DiagnosticIssueCredentials {
         return String(data: data, encoding: .utf8)
     }
 
+    /// Update without removing the previous credential first. The earlier
+    /// delete-then-add flow could lose a working token if the insert failed.
     @discardableResult
     static func save(_ token: String) -> Bool {
         let sanitized = token.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !sanitized.isEmpty, let data = sanitized.data(using: .utf8) else { return false }
-        delete()
-        let query: [String: Any] = [
+
+        let identity: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
             kSecAttrAccount as String: account,
-            kSecValueData as String: data,
-            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly,
         ]
-        return SecItemAdd(query as CFDictionary, nil) == errSecSuccess
+        let update: [String: Any] = [kSecValueData as String: data]
+        let updateStatus = SecItemUpdate(identity as CFDictionary, update as CFDictionary)
+        if updateStatus == errSecSuccess { return true }
+        guard updateStatus == errSecItemNotFound else { return false }
+
+        var insertion = identity
+        insertion[kSecValueData as String] = data
+        insertion[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
+        return SecItemAdd(insertion as CFDictionary, nil) == errSecSuccess
     }
 
     static func delete() {
