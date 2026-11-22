@@ -1,4 +1,6 @@
 import SwiftUI
+import AVFoundation
+import UIKit
 
 struct HomeView: View {
     let featuredGame: GameInfo?
@@ -159,20 +161,28 @@ struct GameOverviewView: View {
             Color.black.opacity(0.96).ignoresSafeArea()
 
             ZStack(alignment: .bottomLeading) {
-                heroArtwork
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .clipped()
-                    .overlay {
-                        LinearGradient(
-                            stops: [
-                                .init(color: .clear, location: 0.22),
-                                .init(color: .black.opacity(0.18), location: 0.5),
-                                .init(color: .black.opacity(0.92), location: 1),
-                            ],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
+                ZStack {
+                    heroArtwork
+                    if let videoURL = viewModel.backgroundVideo(for: game) {
+                        SilentGameVideoBackground(url: videoURL)
+                            .allowsHitTesting(false)
                     }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .clipped()
+                .overlay {
+                    // Keep the details legible on the left while gameplay moves on the right.
+                    LinearGradient(
+                        colors: [.black.opacity(0.93), .black.opacity(0.73), .black.opacity(0.24)],
+                        startPoint: .leading, endPoint: .trailing
+                    )
+                }
+                .overlay {
+                    LinearGradient(
+                        colors: [.clear, .black.opacity(0.38)],
+                        startPoint: .top, endPoint: .bottom
+                    )
+                }
 
                 HStack(alignment: .bottom) {
                     VStack(alignment: .leading, spacing: 16) {
@@ -193,7 +203,7 @@ struct GameOverviewView: View {
                         VStack(alignment: .leading, spacing: 12) {
                             Text("À propos du jeu")
                                 .font(.title2.weight(.semibold))
-                            Text(GameDetailsFR.summary(for: game))
+                            Text(viewModel.frenchDescription(for: shownGame))
                                 .font(.system(size: 24))
                                 .foregroundStyle(.white.opacity(0.9))
                                 .lineLimit(5)
@@ -255,6 +265,9 @@ struct GameOverviewView: View {
         .task(id: game.id) {
             await viewModel.loadGameDetails(game, authManager: authManager)
         }
+        .task(id: game.id) {
+            await viewModel.loadPublicMedia(for: game)
+        }
     }
 
     @ViewBuilder
@@ -270,6 +283,82 @@ struct GameOverviewView: View {
         } else {
             BoosteroidTheme.cardGradient
         }
+    }
+}
+
+
+// MARK: - Automatic silent video backdrop
+// Plays publicly accessible Steam MP4 trailers directly; no YouTube or Twitch login.
+// AVPlayerLayer has no visible player controls and is non-interactive.
+
+private struct SilentGameVideoBackground: UIViewRepresentable {
+    let url: URL
+
+    func makeUIView(context: Context) -> SilentGameVideoSurface {
+        let view = SilentGameVideoSurface()
+        view.start(url: url)
+        return view
+    }
+
+    func updateUIView(_ uiView: SilentGameVideoSurface, context: Context) {
+        uiView.start(url: url)
+    }
+
+    static func dismantleUIView(_ uiView: SilentGameVideoSurface, coordinator: ()) {
+        uiView.stop()
+    }
+}
+
+private final class SilentGameVideoSurface: UIView {
+    override class var layerClass: AnyClass { AVPlayerLayer.self }
+
+    private var activeURL: URL?
+    private var player: AVQueuePlayer?
+    private var looper: AVPlayerLooper?
+
+    private var videoLayer: AVPlayerLayer { layer as! AVPlayerLayer }
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        isOpaque = false
+        isUserInteractionEnabled = false
+        backgroundColor = .clear
+        videoLayer.videoGravity = .resizeAspectFill
+        videoLayer.backgroundColor = UIColor.clear.cgColor
+    }
+
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+    }
+
+    func start(url: URL) {
+        guard activeURL != url else { return }
+        stop()
+        activeURL = url
+
+        let queue = AVQueuePlayer()
+        queue.isMuted = true
+        queue.volume = 0
+        queue.actionAtItemEnd = .none
+        looper = AVPlayerLooper(player: queue, templateItem: AVPlayerItem(url: url))
+        player = queue
+        videoLayer.player = queue
+        queue.play()
+    }
+
+    func stop() {
+        player?.pause()
+        looper?.disableLooping()
+        player?.removeAllItems()
+        videoLayer.player = nil
+        looper = nil
+        player = nil
+        activeURL = nil
+    }
+
+    deinit {
+        // No playback should survive leaving the detail view.
+        player?.pause()
     }
 }
 
@@ -502,12 +591,17 @@ private struct LibraryCarouselView: View {
         .onExitCommand(perform: onDismiss)
         .defaultFocus($actionFocus, .play)
         .task(id: request.games[currentIndex].id) {
-            // Rapid left/right navigation must not fan out dozens of API requests.
-            // SwiftUI cancels this task when the selected game changes.
+            // Rapid navigation must not trigger dozens of requests.
             do { try await Task.sleep(for: .milliseconds(450)) }
             catch { return }
             guard !Task.isCancelled else { return }
             await viewModel.loadGameDetails(request.games[currentIndex], authManager: authManager)
+        }
+        .task(id: request.games[currentIndex].id) {
+            do { try await Task.sleep(for: .milliseconds(450)) }
+            catch { return }
+            guard !Task.isCancelled else { return }
+            await viewModel.loadPublicMedia(for: request.games[currentIndex])
         }
     }
 
@@ -540,10 +634,21 @@ private struct LibraryCarouselView: View {
 
     private func overviewCard(_ game: GameInfo) -> some View {
         ZStack {
-            carouselArtwork(game)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .clipped()
-                .overlay(Color.black.opacity(0.67))
+            ZStack {
+                carouselArtwork(game)
+                if let videoURL = viewModel.backgroundVideo(for: game) {
+                    SilentGameVideoBackground(url: videoURL)
+                        .allowsHitTesting(false)
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .clipped()
+            .overlay {
+                LinearGradient(
+                    colors: [.black.opacity(0.78), .black.opacity(0.54), .black.opacity(0.40)],
+                    startPoint: .leading, endPoint: .trailing
+                )
+            }
 
             HStack(alignment: .center, spacing: 38) {
                 posterArtwork(game)
@@ -578,7 +683,7 @@ private struct LibraryCarouselView: View {
                         .foregroundStyle(.white)
                         .padding(.top, 10)
 
-                    Text(GameDetailsFR.summary(for: game))
+                    Text(viewModel.frenchDescription(for: game))
                         .font(.system(size: 21))
                         .foregroundStyle(.white.opacity(0.90))
                         .lineLimit(5)
