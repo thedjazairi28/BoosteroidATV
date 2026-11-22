@@ -23,7 +23,7 @@ struct MainTabView: View {
                     isLoading: viewModel.isLoading,
                     error: viewModel.error,
                     onPlay: launch,
-                    onShowDetails: { selectedGame = $0 },
+                    onShowDetails: { showDetails($0, origin: "Accueil") },
                     onRefresh: { await viewModel.refreshLibrary(authManager: authManager) }
                 )
             }
@@ -33,7 +33,7 @@ struct MainTabView: View {
                     games: viewModel.catalog,
                     isLoading: viewModel.isCatalogLoading,
                     error: viewModel.catalogError,
-                    onSelect: { selectedGame = $0 },
+                    onSelect: { showDetails($0, origin: "Catalogue") },
                     onRefresh: { await viewModel.loadCatalog(authManager: authManager, force: true) }
                 )
                 .task { await viewModel.loadCatalog(authManager: authManager) }
@@ -79,7 +79,12 @@ struct MainTabView: View {
                 .environment(viewModel)
         }
         .fullScreenCover(item: $selectedGame, onDismiss: {
-            guard let game = pendingGameToPlay else { return }
+            guard let game = pendingGameToPlay else {
+                launchTrace.record("Fiche refermée sans demande de lancement")
+                return
+            }
+            launchTrace.record("Fiche refermée : ouverture de la session demandée")
+            UserDefaults.standard.set("Transition fiche vers streaming", forKey: "boosteroid.launch.lastCheckpoint")
             pendingGameToPlay = nil
             launch(game)
         }) { game in
@@ -87,6 +92,12 @@ struct MainTabView: View {
                 game: game,
                 isFavorite: viewModel.isFavorite(game),
                 onPlay: {
+                    // Persist the click before SwiftUI dismisses the full-screen
+                    // details view: a crash during the transition was invisible
+                    // to MainTabView.launch() in v2.4.4.
+                    launchTrace.record("Bouton Jouer pressé : " + String(game.title.prefix(90)))
+                    UserDefaults.standard.set(true, forKey: "boosteroid.launch.inProgress")
+                    UserDefaults.standard.set("Clic Jouer : fermeture de la fiche", forKey: "boosteroid.launch.lastCheckpoint")
                     pendingGameToPlay = game
                     selectedGame = nil
                 },
@@ -96,8 +107,16 @@ struct MainTabView: View {
         }
     }
 
+    private func showDetails(_ game: GameInfo, origin: String) {
+        launchTrace.record("Fiche sélectionnée (" + origin + ") : " + String(game.title.prefix(90)))
+        selectedGame = game
+    }
+
     private func launch(_ game: GameInfo) {
-        guard gameToPlay == nil else { return }
+        guard gameToPlay == nil else {
+            launchTrace.record("Demande ignorée : écran de streaming déjà ouvert", level: "ERREUR")
+            return
+        }
         // Store a friendly game title only. Never persist a user token, email,
         // session identifier or network payload in the diagnostics.
         launchTrace.record("Lancement demandé : " + String(game.title.prefix(90)))
