@@ -14,9 +14,32 @@
 | Base d'origine | `main` | `623c42b` | Version amont disponible | **Testée** : installation et streaming sur Apple TV |
 | V1 — Catalogue unifié | `feature/unified-catalog-v1` | `a788071` | **Réussie** le 20/11/2026 | **Non confirmé** |
 | V2 — Smart Experience | `feature/v2-smart-experience` | `fd60053` | **Réussie** le 20/11/2026 | **Non confirmé** |
-| V2.1 — Stability | `feature/v2.1-stability` | `17df76b` | **Réussie** le 20/11/2026 | **Tests partiels : 2 OK, 3 KO, 1 ambigu** — 22/11/2026 |
+| V2.2 — Filtres multiples (expérimental) | `feature/v2.2-multi-store-filters` | `19d7fd4` | **GitHub Actions en cours** le 22/11/2026 | **Non testé sur Apple TV** |
+| V2.1 — Stability | `feature/v2.1-stability` | `17df76b` | **Réussie** le 20/11/2026 | **3 OK, 3 KO** — 22/11/2026 (ligne rouge disparue, origine inconnue) |
 
-**Important :** les fonctionnalités V1 sont incluses dans V2, et celles de V1 + V2 sont incluses dans V2.1. La branche `main` reste sur la base d'origine : **aucune des trois branches expérimentales n'est fusionnée dans `main`** à la date de ce journal.
+**Important :** V2 inclut V1, V2.1 inclut V1 + V2, et V2.2 part de V2.1. La branche `main` conserve le code de base : **aucune des branches expérimentales n'est fusionnée dans `main`** à la date de ce journal.
+
+## 22 novembre 2026 — V2.2 « Filtres multiples » (développement)
+
+**Branche :** [feature/v2.2-multi-store-filters](https://github.com/thedjazairi28/BoosteroidATV/tree/feature/v2.2-multi-store-filters)  
+**Comparaison avec V2.1 :** [diff V2.1 → V2.2](https://github.com/thedjazairi28/BoosteroidATV/compare/feature/v2.1-stability...feature/v2.2-multi-store-filters)  
+**Compilation :** [GitHub Actions #45020911625](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45020911625) — **en cours lors de la mise à jour du journal**  
+**Tests tvOS :** non effectués sur cette version.
+
+### Ajouté
+
+- Les boutiques du catalogue ne sont plus exclusives : sélection multiple par **cases indépendantes**.
+- Boutiques disponibles : **Steam**, **Xbox**, **Epic Games**, **Autres** (jeux sans boutique parmi les trois précédentes reconnue).
+- Bouton **« Tout cocher »** pour afficher toutes les boutiques et les jeux dont la boutique est inconnue.
+- Les filtres se combinent en **OU** : choisir Steam + Xbox affiche les jeux identifiés sur l'une ou l'autre boutique.
+- La recherche par nom reste active et se combine aux boutiques cochées, sans nouvel appel réseau au changement de filtre.
+- Si aucune boutique n'est cochée, un message explicite est affiché au lieu de prétendre qu'il n'existe aucun résultat.
+
+### Limitations et validation nécessaire
+
+- Le rattachement à une boutique dépend des métadonnées Boosteroid, avec des correspondances textuelles comme en V2.1 ; les jeux mal renseignés peuvent apparaître dans « Autres ».
+- **Aucune confirmation de bon fonctionnement sur Apple TV** tant qu'un IPA V2.2 n'a pas été compilé, installé et testé.
+- Cette version **ne corrige pas** les trois tests KO de V2.1 : enregistrement des comptes, saisie iPhone, accès aux paramètres de streaming.
 
 ## 22 novembre 2026 — Tests réels sur Apple TV (V2.1)
 
@@ -29,14 +52,14 @@
 | Enregistrement des identifiants des comptes de jeux | ❌ **KO** | Fonction non opérationnelle dans le test utilisateur ; erreur exacte / cause à diagnostiquer |
 | Saisie de texte depuis l'iPhone | ❌ **KO** | Fonction non opérationnelle dans le test utilisateur ; cause à diagnostiquer |
 | Accès aux paramètres d'optimisation et de streaming | ❌ **KO** | Fonction non opérationnelle dans le test utilisateur ; cause à diagnostiquer |
-| Ligne rouge en bas de l'écran | ❔ **À clarifier** | Case cochée avec l'intitulé « toujours présente ou a disparu », qui ne précise pas si l'anomalie persiste ; **aucune correction confirmée** |
+| Ligne rouge en bas de l'écran | ✅ **Disparue** | Absente lors du test V2.1 ; l'utilisateur suspecte un bug d'affichage de la TV. **Aucun lien causal avec une modification du code n'est établi.** |
 
-**Bilan V2.1 : 2 OK, 3 KO, 1 résultat ambigu. Version non validée pour diffusion stable.**
+**Bilan V2.1 : 3 observations positives (dont disparition de la ligne rouge), 3 tests KO. Version non validée pour diffusion stable.**
 
 ### Priorités de correction
 
 1. Reproduire et isoler les trois échecs **Comptes**, **Saisie iPhone** et **Paramètres de streaming**, avec captures et étapes précises.
-2. Clarifier si la ligne rouge apparaît encore sur le flux de la V2.1.
+2. Surveiller une éventuelle réapparition de la ligne rouge ; ne pas attribuer sa disparition au logiciel sans preuve.
 3. Corriger chaque anomalie dans une branche dédiée, compiler, puis refaire les tests sur Apple TV.
 4. Ne publier une version « stable » qu'après validation effective ; conserver les builds expérimentaux séparés.
 
@@ -113,7 +136,7 @@ Ces essais concernent l'application BoosteroidATV installée **avant validation 
 - **Installation tvOS** : signature / installation de l'IPA réussie via atvloadly (« installation succeeded »).
 - **Streaming Boosteroid** : démarrage d'une session et accès à l'interface Steam observés.
 - **Navigation dans Steam** : le mode « Pointer » fonctionne avec la **surface tactile de la Siri Remote** et un clic central, pas avec le stick de la manette Xbox.
-- **Anomalie observée** : **fine ligne rouge en bas du flux vidéo**. Origine et correction **non déterminées**. Ne pas présenter V2.1 comme un correctif de ce défaut.
+- **Anomalie auparavant observée** : **fine ligne rouge en bas du flux vidéo**. Signalée disparue lors des essais V2.1 du 22/11/2026. Origine indéterminée (l'utilisateur soupçonne un défaut temporaire d'affichage) ; ne pas présenter V2.1 comme un correctif.
 
 ## Fichiers compilés et récupération
 
@@ -136,7 +159,7 @@ Les téléchargements GitHub Actions se trouvent dans la rubrique **Artifacts** 
 - [ ] **KO le 22/11/2026 :** diagnostiquer la fonction d'enregistrement des identifiants, puis tester leur envoi sans publier d'identifiants ou de secrets dans GitHub.
 - [ ] Tester la protection HTTP 429 et la stabilité du catalogue au fil des sessions.
 - [ ] **KO le 22/11/2026 :** diagnostiquer l'accès aux paramètres d'optimisation et de streaming ; mesurer ensuite la latence et l'effet des profils.
-- [ ] Identifier la cause de la **ligne rouge en bas de l'image** et créer une correction dédiée si le problème vient de l'application.
+- [x] Confirmer la disparition de la **ligne rouge en bas de l'image** sur le test V2.1 du 22/11/2026 ; **cause non établie**, surveiller si l'anomalie revient.
 - [ ] Publier une version validée dans **GitHub Releases** (IPA non signé) avec des notes de version permanentes.
 
 ## Convention pour les prochaines modifications
