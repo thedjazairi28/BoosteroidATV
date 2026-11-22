@@ -8,6 +8,7 @@ on:
       - feature/v2.1-stability
       - feature/v2.2-multi-store-filters
       - feature/v2.3-french-trailers
+      - feature/v2.3.1-video-diagnostics
   workflow_dispatch:
 
 permissions:
@@ -28,12 +29,12 @@ jobs:
       - name: Build unsigned IPA
         run: |
           chmod +x scripts/build-ipa.sh
-          VERSION=2026.11.22.3 ./scripts/build-ipa.sh
+          VERSION=2026.11.22.4 ./scripts/build-ipa.sh
 
       - name: Upload unsigned IPA for atvloadly
         uses: actions/upload-artifact@v4
         with:
-          name: BoosteroidATV-v2-3-silent-autoplay-unsigned
+          name: BoosteroidATV-v2-3-1-video-diagnostics-unsigned
           path: build/*.ipa
           if-no-files-found: error
           retention-days: 7
