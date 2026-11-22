@@ -14,7 +14,7 @@
 | Base d'origine | `main` | `623c42b` | Version amont disponible | **Testée** : installation et streaming sur Apple TV |
 | V1 — Catalogue unifié | `feature/unified-catalog-v1` | `a788071` | **Réussie** le 20/11/2026 | **Non confirmé** |
 | V2 — Smart Experience | `feature/v2-smart-experience` | `fd60053` | **Réussie** le 20/11/2026 | **Non confirmé** |
-| V2.4.1 — Stabilité du lancement (expérimental) | `feature/v2.4.1-launch-stability` | `3f16bd9` | **Réussie** — [#45030927237](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45030927237) | **Non testé sur Apple TV** |
+| V2.4.1 — Stabilité du lancement (expérimental) | `feature/v2.4.1-launch-stability` | `3f16bd9` | **Réussie** — [#45030927237](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45030927237) | ❌ **KO : fermeture de l'application au lancement de tout jeu signalée** (22/11/2026) |
 | V2.4 — Souris virtuelle avec manette (expérimental) | `feature/v2.4-gamepad-pointer` | `fd7d78a` | **Réussie** — [#45026265985](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45026265985) | **Non testé sur Apple TV** |
 | V2.3.3 — Fiches épurées (expérimental) | `feature/v2.3.3-clean-game-cards` | `98a809c` | **En cours** — compilation GitHub Actions | **Non testé sur Apple TV** |
 | V2.3.2 — Lecteur HLS Steam (expérimental) | `feature/v2.3.2-hls-trailers` | `b95d82a` | **Réussie** — [#45024722519](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45024722519) | **Non testé sur Apple TV** |
@@ -32,7 +32,15 @@
 **Branche :** [feature/v2.4.1-launch-stability](https://github.com/thedjazairi28/BoosteroidATV/tree/feature/v2.4.1-launch-stability)  
 **Diff :** [V2.4 → V2.4.1](https://github.com/thedjazairi28/BoosteroidATV/compare/feature/v2.4-gamepad-pointer...feature/v2.4.1-launch-stability)  
 **Build :** [GitHub Actions #45030927237](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45030927237) — **réussi**. Artifact : `BoosteroidATV-v2-4-1-launch-stability-unsigned` (ZIP contenant un IPA), disponible jusqu'au **29 novembre 2026**.  
-**Test Apple TV :** à réaliser.
+**Test Apple TV :** **KO selon retour utilisateur (22/11/2026)** : après essai, l'application se ferme pour chaque jeu tenté, et pas seulement « Installer et jouer ». Le caractère systématique et la cause exacte restent à confirmer par logs et test de retour arrière. **Ne pas présenter cette version comme un correctif validé.**
+
+### Régression critique signalée lors des essais
+
+- **Nouveau constat utilisateur : « tout se coupe peu importe le jeu »**, après le signalement initial limité à « Installer et jouer ». Retour à l'accueil tvOS évoqué dans le même contexte ; **crash système non prouvé sans rapport**.
+- **Décision : déconseiller V2.4.1 jusqu'au diagnostic**, revenir à [V2.4 — build #45026265985](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45026265985) pour tester la régression, puis à V2.3.2 si nécessaire.
+- Comparaison de code V2.4 → V2.4.1 : seuls `HomeView.swift` (logique différée de lancement / démontage du lecteur HLS) et le workflow de compilation ont changé. **Corrélation temporelle ≠ preuve de causalité.**
+- **Diagnostic souhaité :** version IPA réellement installée, point exact de fermeture, et éventuel rapport de crash/Jetsam de tvOS.
+- **Ne pas fusionner la branche V2.4.1 ni ajouter V2.5 « Mes jeux » avant d'avoir rétabli le lancement.**
 
 ### Hypothèse technique et mitigation
 
