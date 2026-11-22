@@ -14,6 +14,7 @@
 | Base d'origine | `main` | `623c42b` | Version amont disponible | **Testée** : installation et streaming sur Apple TV |
 | V1 — Catalogue unifié | `feature/unified-catalog-v1` | `a788071` | **Réussie** le 20/11/2026 | **Non confirmé** |
 | V2 — Smart Experience | `feature/v2-smart-experience` | `fd60053` | **Réussie** le 20/11/2026 | **Non confirmé** |
+| V2.4.6 — Keychain fiable pour les rapports GitHub (expérimental) | `feature/v2.4.6-keychain-reliability` | `1a087da` | [Actions #45035783886](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45035783886) — en cours | **Non testé sur Apple TV** |
 | V2.4.5 — Traces de clic avant streaming (expérimental) | `feature/v2.4.5-prelaunch-trace` | `8220a93` | **Réussie** — [Actions #45034634363](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45034634363) | **Non testé sur Apple TV** |
 | V2.4.4 — Envoi des diagnostics GitHub (expérimental) | `feature/v2.4.4-github-reports` | `4b1eec8` | **Réussie** — [Actions #45033742386](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45033742386) | **Non testé sur Apple TV** |
 | V2.4.3 — Journal de lancement en direct (expérimental) | `feature/v2.4.3-live-logs` | `f0935be` | **Réussie** — [#45032820450](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45032820450) | **Non testé sur Apple TV** |
@@ -28,6 +29,28 @@
 | V2.1 — Stability | `feature/v2.1-stability` | `17df76b` | **Réussie** le 20/11/2026 | **3 OK, 3 KO** — 22/11/2026 (ligne rouge disparue, origine inconnue) |
 
 **Important :** V2 inclut V1, V2.1 inclut V1 + V2, V2.2 part de V2.1 et V2.3 part de V2.2. La branche `main` conserve le code de base : **aucune des branches expérimentales n'est fusionnée dans `main`** à la date de ce journal.
+
+## 22 novembre 2026 — V2.4.6 « Sécurisation de l'enregistrement du jeton » (expérimental)
+
+**Branche :** [feature/v2.4.6-keychain-reliability](https://github.com/thedjazairi28/BoosteroidATV/tree/feature/v2.4.6-keychain-reliability) ; base V2.4.5.  
+**PR de revue :** [#3](https://github.com/thedjazairi28/BoosteroidATV/pull/3).  
+**Build :** [GitHub Actions #45035783886](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45035783886) — vérifier réussite avant installation.  
+**Apple TV :** non testé.
+
+### Modifications
+
+- Conservation du jeton GitHub **uniquement dans le Keychain de l'Apple TV**, saisi une fois par l'utilisateur via le champ `SecureField` de Réglages → Diagnostics. Aucune clé intégrée à l'IPA ou au code source.
+- Mise à jour atomique via `SecItemUpdate` : ne supprime plus l'ancien jeton avant un remplacement ; éviter la perte du secret encore valide en cas d'échec de remplacement.
+- Vérification de relecture Keychain après sauvegarde et bouton **« Vérifier le Keychain »** pour un contrôle post-mise-à-jour.
+- Documentation de l'usage du clavier iPhone, de la suppression du jeton, de la rotation d'un jeton publié, et des conditions de conservation entre installations (`bundle ID` et identité de signature).
+- **La V2.4.6 ne corrige pas le crash Call of Duty.** Elle prépare l'envoi des rapports en conservant les traces de la V2.4.5.
+
+### Essais attendus
+
+- [ ] Enregistrer un **nouveau** PAT fine-grained (ancien exposé dans le chat à révoquer) dans le Keychain de tvOS.
+- [ ] Tester « Vérifier le Keychain », quitter/rouvrir BoosteroidATV puis revérifier.
+- [ ] Envoyer un rapport d'erreur via GitHub Issues et contrôler le numéro du ticket.
+- [ ] Comparer les derniers jalons Red Dead Redemption 2 et Call of Duty, puis récupérer un crash natif tvOS/Jetsam si nécessaire.
 
 ## 22 novembre 2026 — V2.4.5 « Diagnostic de transition de fiche » (expérimental)
 
