@@ -14,7 +14,7 @@
 | Base d'origine | `main` | `623c42b` | Version amont disponible | **Testée** : installation et streaming sur Apple TV |
 | V1 — Catalogue unifié | `feature/unified-catalog-v1` | `a788071` | **Réussie** le 20/11/2026 | **Non confirmé** |
 | V2 — Smart Experience | `feature/v2-smart-experience` | `fd60053` | **Réussie** le 20/11/2026 | **Non confirmé** |
-| V2.3.1 — Diagnostic des aperçus vidéo (expérimental) | `feature/v2.3.1-video-diagnostics` | `dcc7ac6` | [Build #45024136324](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45024136324), en cours | **Non testé sur Apple TV** |
+| V2.3.1 — Diagnostic des aperçus vidéo (expérimental) | `feature/v2.3.1-video-diagnostics` | `dcc7ac6` | **Réussie** le 22/11/2026 — [#45024136324](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45024136324) | **Non testé sur Apple TV** |
 | V2.3 — Vidéo silencieuse automatique et résumé FR (expérimental) | `feature/v2.3-french-trailers` | `244fc60` | **Réussie** le 22/11/2026 | **Non testé sur Apple TV** |
 | V2.2 — Filtres et fiches enrichies, interface FR (expérimental) | `feature/v2.2-multi-store-filters` | `e4b1ba3` | **Réussie** le 22/11/2026 | **Non testé sur Apple TV** |
 | V2.1 — Stability | `feature/v2.1-stability` | `17df76b` | **Réussie** le 20/11/2026 | **3 OK, 3 KO** — 22/11/2026 (ligne rouge disparue, origine inconnue) |
@@ -26,7 +26,7 @@
 **Motif :** retour de test Apple TV : **aucune vidéo ne démarre à l'ouverture d'une fiche de jeu dans la V2.3**. Cause réelle non encore identifiée.  
 **Branche :** [feature/v2.3.1-video-diagnostics](https://github.com/thedjazairi28/BoosteroidATV/tree/feature/v2.3.1-video-diagnostics)  
 **Diff :** [V2.3 → V2.3.1](https://github.com/thedjazairi28/BoosteroidATV/compare/feature/v2.3-french-trailers...feature/v2.3.1-video-diagnostics)  
-**Builds :** [#45024010277](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45024010277) — **réussi** ; [#45024136324](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45024136324) — compilation avec entêtes HTTP de compatibilité Steam, **en cours**.  
+**Builds :** [#45024010277](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45024010277) — **réussi** ; [#45024136324](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45024136324) — **réussi**, incluant entêtes HTTP de compatibilité Steam. Artifact : `BoosteroidATV-v2-3-1-video-diagnostics-unsigned` (ZIP contenant l'IPA), expiration **29/11/2026**.  
 **Tests sur Apple TV :** non exécutés sur cette version.
 
 ### Corrections / diagnostics
@@ -229,6 +229,7 @@ Les téléchargements GitHub Actions se trouvent dans la rubrique **Artifacts** 
 | V2.1 | `BoosteroidATV-v2-1-stability-unsigned` | [#44839880457](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/44839880457) |
 | V2.2 | `BoosteroidATV-v2-2-multi-store-filters-unsigned` | [#45021265100](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45021265100) |
 | V2.3 | `BoosteroidATV-v2-3-silent-autoplay-unsigned` | [#45023434107](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45023434107) |
+| V2.3.1 | `BoosteroidATV-v2-3-1-video-diagnostics-unsigned` | [#45024136324](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45024136324) |
 
 **Expiration annoncée par GitHub : 27 novembre 2026 pour V1/V2/V2.1 ; 29 novembre 2026 pour V2.2 et V2.3.** Après expiration, relancer un build ou publier un fichier dans **Releases** pour disposer d'un téléchargement plus durable. Aucun Release propre à ce fork n'a été trouvé lors de la rédaction.
 
