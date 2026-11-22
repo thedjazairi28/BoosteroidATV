@@ -155,7 +155,23 @@ struct GameOverviewView: View {
     let onDismiss: () -> Void
 
     @State private var videoPlaybackError: String?
+    @State private var previewEnabled = true
+    @State private var launchRequested = false
     private var shownGame: GameInfo { viewModel.enrichedGame(game) }
+
+    /// Stop HLS playback BEFORE the full-screen streaming view is allocated.
+    /// SwiftUI's cover transition alone may briefly keep the trailer decoder alive.
+    private func prepareToLaunch() {
+        guard !launchRequested else { return }
+        launchRequested = true
+        previewEnabled = false
+        Task { @MainActor in
+            // One render pass gives dismantleUIView a chance to tear down AVPlayer
+            // before WebRTC allocates its own video decoder.
+            try? await Task.sleep(for: .milliseconds(180))
+            onPlay()
+        }
+    }
 
     var body: some View {
         ZStack {
@@ -164,7 +180,7 @@ struct GameOverviewView: View {
             ZStack(alignment: .bottomLeading) {
                 ZStack {
                     heroArtwork
-                    if let videoURL = viewModel.backgroundVideo(for: game) {
+                    if previewEnabled, let videoURL = viewModel.backgroundVideo(for: game) {
                         SilentGameVideoBackground(url: videoURL, onError: { videoPlaybackError = $0 })
                             .allowsHitTesting(false)
                     }
@@ -237,7 +253,7 @@ struct GameOverviewView: View {
                         }
 
                         HStack(spacing: 16) {
-                            Button(action: onPlay) {
+                            Button(action: prepareToLaunch) {
                                 Label(
                                     shownGame.requiresInstallation ? "Installer et jouer" : "Jouer",
                                     systemImage: shownGame.requiresInstallation ? "square.and.arrow.down" : "play.fill"
@@ -246,6 +262,7 @@ struct GameOverviewView: View {
                             }
                             .buttonStyle(.borderedProminent)
                             .tint(BoosteroidTheme.violet)
+                            .disabled(launchRequested)
 
                             Button(action: onToggleFavorite) {
                                 Label(isFavorite ? "Retirer des favoris" : "Ajouter aux favoris",
@@ -275,6 +292,7 @@ struct GameOverviewView: View {
             .padding(.vertical, 86)
         }
         .onExitCommand(perform: onDismiss)
+        .onDisappear { previewEnabled = false }
         .task(id: game.id) {
             await viewModel.loadGameDetails(game, authManager: authManager)
         }
