@@ -23,6 +23,37 @@ enum DiagnosticIssueCredentials {
         return String(data: data, encoding: .utf8)
     }
 
+    /// Safe read-only verification for the tvOS UI. Never returns the token,
+    /// only whether a usable value is present and a non-sensitive OSStatus.
+    static func checkStatus() -> (available: Bool, message: String) {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: account,
+            kSecReturnData as String: true,
+            kSecMatchLimit as String: kSecMatchLimitOne,
+        ]
+        var item: CFTypeRef?
+        let status = SecItemCopyMatching(query as CFDictionary, &item)
+        switch status {
+        case errSecSuccess:
+            if let data = item as? Data,
+               let token = String(data: data, encoding: .utf8),
+               !token.isEmpty {
+                return (true, "Jeton présent et lisible dans le Keychain de cette Apple TV. Les droits GitHub seront vérifiés lors de l'envoi.")
+            }
+            return (false, "Une entrée Keychain existe, mais son contenu n'est pas lisible.")
+        case errSecItemNotFound:
+            return (false, "Aucun jeton enregistré pour cette installation. Colle un nouveau jeton puis sélectionne Enregistrer le jeton.")
+        case errSecInteractionNotAllowed:
+            return (false, "Le Keychain est temporairement inaccessible (interaction non autorisée). Réessaie avec l'Apple TV déverrouillée.")
+        case errSecMissingEntitlement:
+            return (false, "Accès Keychain refusé : problème de signature ou de droits de l'application (errSecMissingEntitlement).")
+        default:
+            return (false, "Lecture du Keychain impossible (code système \(status)).")
+        }
+    }
+
     /// Update without removing the previous credential first. The earlier
     /// delete-then-add flow could lose a working token if the insert failed.
     @discardableResult
