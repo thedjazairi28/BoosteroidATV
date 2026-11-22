@@ -48,7 +48,10 @@ struct HelpView: View {
                     "• La Siri Remote permet de naviguer dans l'application.",
                     "• Pour ouvrir le menu pendant un jeu, utilise Lecture/Pause ou Start + Select sur la manette.",
                     "• Le clavier virtuel est disponible dans le menu de session.",
-                    "• Le mode Pointeur utilise la surface tactile de la Siri Remote comme souris et son clic central comme clic gauche."
+                    "• Mode Pointeur : déplace le curseur avec le joystick droit de la manette Xbox/PlayStation ; appuie sur A / Croix pour cliquer.",
+                    "• B / Rond quitte le mode Pointeur et redonne le contrôle normal au jeu.",
+                    "• La Siri Remote reste utilisable : glisse ton doigt sur sa surface tactile et appuie au centre pour cliquer.",
+                    "• Active ou désactive le mode Pointeur depuis la barre d'options (Start + Select sur la manette)."
                 ]
             case .steam:
                 return [
@@ -60,7 +63,7 @@ struct HelpView: View {
                     "Ouvre ou ferme la barre d'options avec Lecture/Pause sur la Siri Remote ou Start + Select sur une manette.",
                     "• Déconnexion : quitte l'affichage du flux, mais Boosteroid peut garder la machine active quelque temps.",
                     "• Clavier : ouvre le clavier virtuel.",
-                    "• Pointeur : permet de cliquer avec la Siri Remote.",
+                    "• Pointeur : souris virtuelle avec le stick droit + A / Croix, ou la surface tactile de la Siri Remote ; B / Rond pour quitter.",
                     "• Interface Steam : affiche le panneau Steam.",
                     "• Performances : affiche débit, images par seconde et latence."
                 ]
