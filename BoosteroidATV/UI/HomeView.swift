@@ -155,6 +155,9 @@ struct GameOverviewView: View {
     let onDismiss: () -> Void
 
     @State private var videoPlaybackError: String?
+    // Safe launch mode: trailer HLS playback is opt-in until tvOS launch
+    // crashes have been ruled out with real device diagnostics.
+    @AppStorage("boosteroid.previewVideosEnabled") private var previewVideosEnabled = false
     private var shownGame: GameInfo { viewModel.enrichedGame(game) }
 
     var body: some View {
@@ -164,7 +167,7 @@ struct GameOverviewView: View {
             ZStack(alignment: .bottomLeading) {
                 ZStack {
                     heroArtwork
-                    if let videoURL = viewModel.backgroundVideo(for: game) {
+                    if previewVideosEnabled, let videoURL = viewModel.backgroundVideo(for: game) {
                         SilentGameVideoBackground(url: videoURL, onError: { videoPlaybackError = $0 })
                             .allowsHitTesting(false)
                     }
@@ -588,6 +591,7 @@ private struct LibraryCarouselView: View {
     @State private var currentIndex: Int
     @State private var navigationDirection = 1
     @State private var videoPlaybackError: String?
+    @AppStorage("boosteroid.previewVideosEnabled") private var previewVideosEnabled = false
     @FocusState private var actionFocus: ActionFocus?
 
     init(request: LibraryCarouselRequest, onPlay: @escaping (GameInfo) -> Void, onDismiss: @escaping () -> Void) {
@@ -708,7 +712,7 @@ private struct LibraryCarouselView: View {
         ZStack {
             ZStack {
                 carouselArtwork(game)
-                if let videoURL = viewModel.backgroundVideo(for: game) {
+                if previewVideosEnabled, let videoURL = viewModel.backgroundVideo(for: game) {
                     SilentGameVideoBackground(url: videoURL, onError: { videoPlaybackError = $0 })
                         .allowsHitTesting(false)
                 }
