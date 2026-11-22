@@ -14,9 +14,31 @@
 | Base d'origine | `main` | `623c42b` | Version amont disponible | **Testée** : installation et streaming sur Apple TV |
 | V1 — Catalogue unifié | `feature/unified-catalog-v1` | `a788071` | **Réussie** le 20/11/2026 | **Non confirmé** |
 | V2 — Smart Experience | `feature/v2-smart-experience` | `fd60053` | **Réussie** le 20/11/2026 | **Non confirmé** |
-| V2.1 — Stability | `feature/v2.1-stability` | `17df76b` | **Réussie** le 20/11/2026 | **Non confirmé** |
+| V2.1 — Stability | `feature/v2.1-stability` | `17df76b` | **Réussie** le 20/11/2026 | **Tests partiels : 2 OK, 3 KO, 1 ambigu** — 22/11/2026 |
 
 **Important :** les fonctionnalités V1 sont incluses dans V2, et celles de V1 + V2 sont incluses dans V2.1. La branche `main` reste sur la base d'origine : **aucune des trois branches expérimentales n'est fusionnée dans `main`** à la date de ce journal.
+
+## 22 novembre 2026 — Tests réels sur Apple TV (V2.1)
+
+**Version :** V2.1 — `feature/v2.1-stability`. Résultats rapportés après installation sur Apple TV. **Une compilation GitHub Actions réussie ne signifie pas que les fonctionnalités fonctionnent.**
+
+| Test fonctionnel | Verdict | Constat |
+| --- | --- | --- |
+| Démarrage de l'application | ✅ **OK** | L'application démarre sans erreur |
+| Affichage du catalogue Steam / Xbox / Epic Games | ✅ **OK** | Jeux des trois boutiques affichés ; exhaustivité et lancement non validés |
+| Enregistrement des identifiants des comptes de jeux | ❌ **KO** | Fonction non opérationnelle dans le test utilisateur ; erreur exacte / cause à diagnostiquer |
+| Saisie de texte depuis l'iPhone | ❌ **KO** | Fonction non opérationnelle dans le test utilisateur ; cause à diagnostiquer |
+| Accès aux paramètres d'optimisation et de streaming | ❌ **KO** | Fonction non opérationnelle dans le test utilisateur ; cause à diagnostiquer |
+| Ligne rouge en bas de l'écran | ❔ **À clarifier** | Case cochée avec l'intitulé « toujours présente ou a disparu », qui ne précise pas si l'anomalie persiste ; **aucune correction confirmée** |
+
+**Bilan V2.1 : 2 OK, 3 KO, 1 résultat ambigu. Version non validée pour diffusion stable.**
+
+### Priorités de correction
+
+1. Reproduire et isoler les trois échecs **Comptes**, **Saisie iPhone** et **Paramètres de streaming**, avec captures et étapes précises.
+2. Clarifier si la ligne rouge apparaît encore sur le flux de la V2.1.
+3. Corriger chaque anomalie dans une branche dédiée, compiler, puis refaire les tests sur Apple TV.
+4. Ne publier une version « stable » qu'après validation effective ; conserver les builds expérimentaux séparés.
 
 ## 20 novembre 2026 — V2.1 « Stability »
 
@@ -35,7 +57,7 @@
 
 ### Limites / état
 
-- **Compilation réussie ≠ fonctionnement validé** : ces modifications doivent encore être vérifiées sur l'Apple TV.
+- **Tests Apple TV du 22/11/2026 : échecs confirmés** pour la gestion des identifiants, la saisie iPhone et l'accès aux paramètres d'optimisation/streaming. Voir le rapport ci-dessus. Le démarrage et l'affichage du catalogue sont validés.
 - Le catalogue n'est pas garanti exhaustif ; la protection contre les 429 limite volontairement le volume des recherches.
 
 ## 20 novembre 2026 — V2 « Smart Experience »
@@ -107,12 +129,13 @@ Les téléchargements GitHub Actions se trouvent dans la rubrique **Artifacts** 
 
 ## À faire / à valider
 
-- [ ] Installer l'IPA **V2.1** sur l'Apple TV et confirmer le démarrage de l'application.
-- [ ] Vérifier les onglets Catalogue / Bibliothèque / Comptes et la navigation LB/RB.
-- [ ] Vérifier la saisie depuis l'iPhone et l'envoi de caractères spéciaux.
-- [ ] Tester manuellement l'envoi d'identifiants, sans publier d'identifiants ou de secrets dans GitHub.
+- [x] Installer l'IPA **V2.1** sur l'Apple TV et confirmer le démarrage de l'application (OK, 22/11/2026).
+- [x] Vérifier que le catalogue V2.1 affiche Steam / Xbox / Epic (OK, 22/11/2026).
+- [ ] Vérifier séparément la navigation LB/RB et les onglets Bibliothèque / Comptes (non documentés par les tests transmis).
+- [ ] **KO le 22/11/2026 :** diagnostiquer et corriger la saisie depuis l'iPhone, puis refaire les tests.
+- [ ] **KO le 22/11/2026 :** diagnostiquer la fonction d'enregistrement des identifiants, puis tester leur envoi sans publier d'identifiants ou de secrets dans GitHub.
 - [ ] Tester la protection HTTP 429 et la stabilité du catalogue au fil des sessions.
-- [ ] Mesurer la latence et le comportement des profils de streaming ; ne pas attribuer d'amélioration sans mesure.
+- [ ] **KO le 22/11/2026 :** diagnostiquer l'accès aux paramètres d'optimisation et de streaming ; mesurer ensuite la latence et l'effet des profils.
 - [ ] Identifier la cause de la **ligne rouge en bas de l'image** et créer une correction dédiée si le problème vient de l'application.
 - [ ] Publier une version validée dans **GitHub Releases** (IPA non signé) avec des notes de version permanentes.
 
