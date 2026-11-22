@@ -1,5 +1,8 @@
 # Journal des mises à jour — BoosteroidATV (fork personnel)
 
+> **Mémoire technique canonique :** [docs/PROJECT_STATE.md](docs/PROJECT_STATE.md) — état courant, historique complet, décisions, tests, incidents et procédure de mise à jour. Les consignes applicables aux assistants se trouvent dans [AGENTS.md](AGENTS.md). Toujours consulter ces deux documents sur `main` avant d'agir.
+
+
 **Dépôt :** [thedjazairi28/BoosteroidATV](https://github.com/thedjazairi28/BoosteroidATV)  
 **Dernière mise à jour de ce journal :** 22 novembre 2026  
 **Projet d'origine :** [luizhdramos/BoosteroidATV](https://github.com/luizhdramos/BoosteroidATV)  
