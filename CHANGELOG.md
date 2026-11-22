@@ -14,6 +14,7 @@
 | Base d'origine | `main` | `623c42b` | Version amont disponible | **Testée** : installation et streaming sur Apple TV |
 | V1 — Catalogue unifié | `feature/unified-catalog-v1` | `a788071` | **Réussie** le 20/11/2026 | **Non confirmé** |
 | V2 — Smart Experience | `feature/v2-smart-experience` | `fd60053` | **Réussie** le 20/11/2026 | **Non confirmé** |
+| V2.4.8 — Mode léger des fiches Xbox (expérimental) | `feature/v2.4.8-xbox-card-safe-mode` | `ec9792a` | [Actions #45037087776](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45037087776) — en cours | **Non testé sur Apple TV** |
 | V2.4.6 — Keychain fiable pour les rapports GitHub (expérimental) | `feature/v2.4.6-keychain-reliability` | `1a087da` | **Réussie** — [Actions #45035783886](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45035783886) | **Non testé sur Apple TV** |
 | V2.4.5 — Traces de clic avant streaming (expérimental) | `feature/v2.4.5-prelaunch-trace` | `8220a93` | **Réussie** — [Actions #45034634363](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45034634363) | **Non testé sur Apple TV** |
 | V2.4.4 — Envoi des diagnostics GitHub (expérimental) | `feature/v2.4.4-github-reports` | `4b1eec8` | **Réussie** — [Actions #45033742386](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45033742386) | **Non testé sur Apple TV** |
@@ -29,6 +30,23 @@
 | V2.1 — Stability | `feature/v2.1-stability` | `17df76b` | **Réussie** le 20/11/2026 | **3 OK, 3 KO** — 22/11/2026 (ligne rouge disparue, origine inconnue) |
 
 **Important :** V2 inclut V1, V2.1 inclut V1 + V2, V2.2 part de V2.1 et V2.3 part de V2.2. La branche `main` conserve le code de base : **aucune des branches expérimentales n'est fusionnée dans `main`** à la date de ce journal.
+
+## 22 novembre 2026 — V2.4.8 « Fiches Xbox mode léger » (expérimental)
+
+**Incident vérifié :** [rapport tvOS #5](https://github.com/thedjazairi28/BoosteroidATV/issues/5), version 2026.11.22.13 sur tvOS 27.2.1 : 15:10:32Z sélection de « Call of Duty: Modern Warfare (Xbox) » dans le Catalogue ; 15:10:35Z réouverture du menu principal ; **pas de clic Jouer, pas de session Boosteroid, aucun message WebRTC**. Le rapport ne contient pas la cause du crash natif/Jetsam.
+
+**Code :** [PR #6](https://github.com/thedjazairi28/BoosteroidATV/pull/6), branche `feature/v2.4.8-xbox-card-safe-mode` basée sur V2.4.7.  
+**Compilation :** [Actions #45037087776](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45037087776).  
+**État des tests :** non vérifié sur l'Apple TV.
+
+### Contournement mesurable
+
+- Mode léger par défaut **sur les fiches Xbox seulement** : désactive image arrière-plan plein écran, chargement facultatif de détails Boosteroid et recherches facultatives de médias Steam **pendant l'ouverture de la fiche**.
+- Préserve le titre, les informations du catalogue, les commandes « Jouer » et « Favoris », et la grille des affiches du catalogue.
+- Possibilité de désactiver dans Réglages → Sécurité du lancement → **Mode léger des fiches Xbox**, afin de tester séparément si nécessaire.
+- Instrumentation de la fiche : sélection, `onAppear`, début/fin des tâches facultatives, `onDisappear` et checkpoint « Ouverture de fiche ».
+
+**Interprétation :** si Call of Duty s'ouvre en mode léger, cela incrimine le chemin des données/media facultatifs ou l'image de fond, **sans identifier encore le composant exact**. Si le crash persiste, investigation du composant SwiftUI et du crash natif tvOS/Jetsam. Le moteur WebRTC et le démarrage de session ne sont pas modifiés.
 
 ## 22 novembre 2026 — V2.4.6 « Sécurisation de l'enregistrement du jeton » (expérimental)
 
