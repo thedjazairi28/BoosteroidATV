@@ -14,7 +14,7 @@
 | Base d'origine | `main` | `623c42b` | Version amont disponible | **Testée** : installation et streaming sur Apple TV |
 | V1 — Catalogue unifié | `feature/unified-catalog-v1` | `a788071` | **Réussie** le 20/11/2026 | **Non confirmé** |
 | V2 — Smart Experience | `feature/v2-smart-experience` | `fd60053` | **Réussie** le 20/11/2026 | **Non confirmé** |
-| V2.4.1 — Stabilité du lancement (expérimental) | `feature/v2.4.1-launch-stability` | `3f16bd9` | **En cours** — [#45030927237](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45030927237) | **Non testé sur Apple TV** |
+| V2.4.1 — Stabilité du lancement (expérimental) | `feature/v2.4.1-launch-stability` | `3f16bd9` | **Réussie** — [#45030927237](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45030927237) | **Non testé sur Apple TV** |
 | V2.4 — Souris virtuelle avec manette (expérimental) | `feature/v2.4-gamepad-pointer` | `fd7d78a` | **Réussie** — [#45026265985](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45026265985) | **Non testé sur Apple TV** |
 | V2.3.3 — Fiches épurées (expérimental) | `feature/v2.3.3-clean-game-cards` | `98a809c` | **En cours** — compilation GitHub Actions | **Non testé sur Apple TV** |
 | V2.3.2 — Lecteur HLS Steam (expérimental) | `feature/v2.3.2-hls-trailers` | `b95d82a` | **Réussie** — [#45024722519](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45024722519) | **Non testé sur Apple TV** |
@@ -31,7 +31,7 @@
 
 **Branche :** [feature/v2.4.1-launch-stability](https://github.com/thedjazairi28/BoosteroidATV/tree/feature/v2.4.1-launch-stability)  
 **Diff :** [V2.4 → V2.4.1](https://github.com/thedjazairi28/BoosteroidATV/compare/feature/v2.4-gamepad-pointer...feature/v2.4.1-launch-stability)  
-**Build :** [GitHub Actions #45030927237](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45030927237) — **en cours** lors de cette rédaction.  
+**Build :** [GitHub Actions #45030927237](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45030927237) — **réussi**. Artifact : `BoosteroidATV-v2-4-1-launch-stability-unsigned` (ZIP contenant un IPA), disponible jusqu'au **29 novembre 2026**.  
 **Test Apple TV :** à réaliser.
 
 ### Hypothèse technique et mitigation
