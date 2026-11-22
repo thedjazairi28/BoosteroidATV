@@ -14,6 +14,20 @@ connexion GitHub de ChatGPT. Aucun serveur personnel n'est nécessaire.
 3. Depuis l'Apple TV : BoosteroidATV → **Réglages → Diagnostics** → saisir le dépôt au format `propriétaire/nom`, coller le jeton via le clavier distant/iPhone, puis sélectionner **Enregistrer le jeton**. Le jeton est stocké dans le Keychain de l'Apple TV et non dans les préférences.
 4. Dans Diagnostics, vérifier que **Journal de lancement à l'écran** est activé, et laisser **Aperçus vidéo animés** désactivé pour les premiers essais.
 
+## Enregistrer le jeton dans le Keychain tvOS (V2.4.6)
+
+Le Keychain appartient à **l'application sur l'Apple TV**, et non à un trousseau visible dans les réglages système. Il n'est pas nécessaire d'utiliser un Mac ou une commande terminal.
+
+1. Si un jeton a déjà été partagé, le **révoquer d'abord** dans GitHub → Settings → Developer settings → Personal access tokens. Créer un nouveau jeton limité au dépôt choisi, permission **Issues: Read and write**, de préférence courte durée.
+2. Copier le nouveau jeton sur l'iPhone. S'assurer que l'iPhone et l'Apple TV utilisent le même réseau local et que l'application Télécommande Apple TV est fonctionnelle.
+3. Apple TV → BoosteroidATV → **Réglages → Diagnostics** → champ **« Jeton GitHub (Issues: Read and write) »**. Sélectionner le champ ; utiliser le clavier Apple TV affiché sur l'iPhone pour **coller** le jeton.
+4. Cliquer sur **Enregistrer le jeton**, et attendre **« Jeton enregistré et relu depuis le Keychain »**. Le champ est automatiquement vidé après l'opération.
+5. Cliquer sur **Vérifier le Keychain** : le message **« Jeton présent »** confirme que l'application retrouve l'entrée locale. Le mot de passe/token n'est jamais affiché.
+6. Lors du premier rapport, sélectionner **Envoyer un rapport d'erreur** : le premier appel réseau vérifie réellement les permissions GitHub. Les erreurs 401/403/404 sont indiquées à l'écran.
+7. Après mise à jour de l'IPA **par-dessus** l'application existante (ne pas la désinstaller), revérifier « Jeton présent ». Le maintien de l'accès dépend de la même identité de signature/équipe, du même bundle ID et du groupe d'accès Keychain ; un re-signing avec une autre identité peut rendre l'ancien jeton inaccessible.
+
+La V2.4.6 remplace un jeton existant par **SecItemUpdate** sans supprimer préalablement l'ancien. Si la mise à jour échoue, l'ancien jeton reste présent. Le secret n'est ni intégré au code source, ni inscrit dans les journaux, ni transmis à ChatGPT.
+
 ## Après la fermeture d'un jeu
 
 1. Relancer BoosteroidATV sur l'Apple TV.
