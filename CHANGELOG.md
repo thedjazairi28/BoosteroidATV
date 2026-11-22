@@ -14,7 +14,7 @@
 | Base d'origine | `main` | `623c42b` | Version amont disponible | **Testée** : installation et streaming sur Apple TV |
 | V1 — Catalogue unifié | `feature/unified-catalog-v1` | `a788071` | **Réussie** le 20/11/2026 | **Non confirmé** |
 | V2 — Smart Experience | `feature/v2-smart-experience` | `fd60053` | **Réussie** le 20/11/2026 | **Non confirmé** |
-| V2.4.5 — Traces de clic avant streaming (expérimental) | `feature/v2.4.5-prelaunch-trace` | `8220a93` | **En cours** — [Actions #45034634363](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45034634363) | **Non testé sur Apple TV** |
+| V2.4.5 — Traces de clic avant streaming (expérimental) | `feature/v2.4.5-prelaunch-trace` | `8220a93` | **Réussie** — [Actions #45034634363](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45034634363) | **Non testé sur Apple TV** |
 | V2.4.4 — Envoi des diagnostics GitHub (expérimental) | `feature/v2.4.4-github-reports` | `4b1eec8` | **Réussie** — [Actions #45033742386](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45033742386) | **Non testé sur Apple TV** |
 | V2.4.3 — Journal de lancement en direct (expérimental) | `feature/v2.4.3-live-logs` | `f0935be` | **Réussie** — [#45032820450](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45032820450) | **Non testé sur Apple TV** |
 | V2.4.2 — Démarrage sécurisé (expérimental) | `feature/v2.4.2-safe-launch` | `baa8aa4` | **Réussie** — [#45032408808](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45032408808) | **Non testé sur Apple TV** |
@@ -35,7 +35,7 @@
 
 **Branche :** [feature/v2.4.5-prelaunch-trace](https://github.com/thedjazairi28/BoosteroidATV/tree/feature/v2.4.5-prelaunch-trace) (base V2.4.4).  
 **Pull request :** [#2](https://github.com/thedjazairi28/BoosteroidATV/pull/2).  
-**Build :** [Actions #45034634363](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45034634363).  
+**Build :** [Actions #45034634363](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45034634363) — compilation réussie ; artifact `BoosteroidATV-v2-4-5-prelaunch-trace-unsigned` disponible jusqu'au **29 novembre 2026**.  
 **Test Apple TV :** non effectué.
 
 ### Correction du trou d'observabilité
