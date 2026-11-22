@@ -14,6 +14,7 @@
 | Base d'origine | `main` | `623c42b` | Version amont disponible | **Testée** : installation et streaming sur Apple TV |
 | V1 — Catalogue unifié | `feature/unified-catalog-v1` | `a788071` | **Réussie** le 20/11/2026 | **Non confirmé** |
 | V2 — Smart Experience | `feature/v2-smart-experience` | `fd60053` | **Réussie** le 20/11/2026 | **Non confirmé** |
+| V2.4.5 — Traces de clic avant streaming (expérimental) | `feature/v2.4.5-prelaunch-trace` | `8220a93` | **En cours** — [Actions #45034634363](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45034634363) | **Non testé sur Apple TV** |
 | V2.4.4 — Envoi des diagnostics GitHub (expérimental) | `feature/v2.4.4-github-reports` | `4b1eec8` | **Réussie** — [Actions #45033742386](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45033742386) | **Non testé sur Apple TV** |
 | V2.4.3 — Journal de lancement en direct (expérimental) | `feature/v2.4.3-live-logs` | `f0935be` | **Réussie** — [#45032820450](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45032820450) | **Non testé sur Apple TV** |
 | V2.4.2 — Démarrage sécurisé (expérimental) | `feature/v2.4.2-safe-launch` | `baa8aa4` | **Réussie** — [#45032408808](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45032408808) | **Non testé sur Apple TV** |
@@ -27,6 +28,35 @@
 | V2.1 — Stability | `feature/v2.1-stability` | `17df76b` | **Réussie** le 20/11/2026 | **3 OK, 3 KO** — 22/11/2026 (ligne rouge disparue, origine inconnue) |
 
 **Important :** V2 inclut V1, V2.1 inclut V1 + V2, V2.2 part de V2.1 et V2.3 part de V2.2. La branche `main` conserve le code de base : **aucune des branches expérimentales n'est fusionnée dans `main`** à la date de ce journal.
+
+## 22 novembre 2026 — V2.4.5 « Diagnostic de transition de fiche » (expérimental)
+
+**Symptôme observé :** Red Dead Redemption 2 (Rockstar) a atteint un flux WebRTC actif sur Apple TV : lancement 15:41:12, flux reçu à 15:41:27, connexion ICE établie 15:41:34, fermeture de l'écran de streaming enregistrée normalement à 15:41:37. Après une tentative de lancement de Call of Duty, l'utilisateur signale une fermeture brutale de l'application. Sa capture montre « Application ouverte » à 15:42:38, mais **aucun événement de clic ou de lancement Call of Duty**. La capture n'établit donc pas la cause de cette fermeture.
+
+**Branche :** [feature/v2.4.5-prelaunch-trace](https://github.com/thedjazairi28/BoosteroidATV/tree/feature/v2.4.5-prelaunch-trace) (base V2.4.4).  
+**Pull request :** [#2](https://github.com/thedjazairi28/BoosteroidATV/pull/2).  
+**Build :** [Actions #45034634363](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45034634363).  
+**Test Apple TV :** non effectué.
+
+### Correction du trou d'observabilité
+
+La V2.4.4 appelait `LaunchTrace.record("Lancement demandé")` uniquement dans `MainTabView.launch()`, exécuté **après** la fermeture de la fiche SwiftUI `GameOverviewView`. Un crash durant l'ouverture de fiche, le clic ou la fermeture du panneau pouvait donc survenir sans aucune trace du jeu sélectionné.
+
+- Enregistrement persistant de la sélection d'une fiche (Catalogue/Accueil).
+- Enregistrement du clic « Jouer » **avant** `selectedGame = nil`.
+- Checkpoint de transition avant et après fermeture de la fiche, puis lancement standard.
+- Signalement d'une demande bloquée par la protection anti-double-lancement.
+- Aucune modification du démarrage WebRTC, de la création de session Boosteroid, du lecteur HLS ou des jetons ; l'objectif est l'investigation, pas une correction non démontrée.
+
+### Test prioritaire
+
+1. Installer la V2.4.5 par-dessus l'installation existante, sans effacer les données locales.
+2. Laisser le journal activé et les aperçus vidéo désactivés.
+3. Depuis l'application fraîchement ouverte, sélectionner Call of Duty puis « Jouer ». Si retour au menu tvOS, rouvrir BoosteroidATV → Réglages → Diagnostics et **envoyer le rapport** ou photographier le journal.
+4. Identifier la dernière étape atteinte : sélection de fiche, clic Jouer, transition de fiche, écran de streaming, authentification, session ou WebRTC.
+5. Comparer au parcours Red Dead Redemption 2, puis tester le même Call of Duty avant/après fermeture normale d'un autre jeu seulement si nécessaire.
+
+**Limite :** pas de preuve de la cause sans journal d'exécution correspondant à Call of Duty ou rapport de crash/Jetsam. Une fermeture de la vue SwiftUI n'établit pas que la session cloud distante a été terminée.
 
 ## 22 novembre 2026 — V2.4.4 « Rapports GitHub depuis l'Apple TV » (diagnostic expérimental)
 
