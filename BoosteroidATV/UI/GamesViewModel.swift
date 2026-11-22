@@ -282,14 +282,14 @@ class GamesViewModel {
 // MARK: - Public video previews and French storefront text
 // Experimental Steam Store endpoints; request only when a game is selected.
 
-struct GameTrailerPreview: Identifiable, Hashable {
+struct GameTrailerPreview: Identifiable, Hashable, Sendable {
     let id: Int
     let title: String
     let thumbnail: URL?
     let videoURL: URL
 }
 
-struct SteamPublicMedia {
+struct SteamPublicMedia: Sendable {
     let descriptionFR: String?
     let videos: [GameTrailerPreview]
 }
@@ -304,7 +304,7 @@ private actor SteamPublicMediaService {
 
     func find(gameTitle: String) async -> SteamPublicMedia? {
         let cleanTitle = gameTitle
-            .replacingOccurrences(of: #"\\s*\\((steam|xbox|epic|rockstar|ubisoft|ea app|gog)\\)\\s*$"#,
+            .replacingOccurrences(of: #"\s*\((steam|xbox|epic|rockstar|ubisoft|ea app|gog)\)\s*$"#,
                                   with: "", options: [.regularExpression, .caseInsensitive])
             .trimmingCharacters(in: .whitespacesAndNewlines)
         guard !cleanTitle.isEmpty else { return nil }
