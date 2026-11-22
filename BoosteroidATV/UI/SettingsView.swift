@@ -9,6 +9,12 @@ struct SettingsView: View {
     @AppStorage("boosteroid.launch.inProgress") private var launchInProgress = false
     @AppStorage("boosteroid.launch.showLiveLog") private var showLiveLog = true
     @State private var launchTrace = LaunchTrace.shared
+    @AppStorage("boosteroid.diagnostics.issueRepository") private var issueRepository = "thedjazairi28/BoosteroidATV"
+    @State private var newIssueToken = ""
+    @State private var issueTokenStored = false
+    @State private var isSendingIssue = false
+    @State private var issueReportStatus: String?
+    @State private var issueReportURL: String?
 
     private let resolutions: [(String, String)] = [
         ("720p", "1280x720"), ("1080p", "1920x1080"),
@@ -159,6 +165,64 @@ struct SettingsView: View {
                             .font(.system(size: 16, design: .monospaced))
                         }
                     }
+                    Divider()
+                        .padding(.vertical, 10)
+                    Text("ENVOI D'UN RAPPORT SUR GITHUB")
+                        .font(.headline)
+                    Text("Un clic crée un ticket GitHub contenant les événements techniques conservés ci-dessus. Aucun envoi automatique.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    TextField("Dépôt (propriétaire/nom)", text: $issueRepository)
+                    SecureField("Jeton GitHub (Issues : Read and write)", text: $newIssueToken)
+                    HStack(spacing: 14) {
+                        Button(issueTokenStored ? "Remplacer le jeton" : "Enregistrer le jeton") {
+                            issueTokenStored = DiagnosticIssueCredentials.save(newIssueToken)
+                            newIssueToken = ""
+                            issueReportStatus = issueTokenStored
+                                ? "Jeton enregistré dans le trousseau de l'Apple TV."
+                                : "Impossible de conserver le jeton dans le trousseau."
+                        }
+                        .disabled(newIssueToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                        .buttonStyle(.bordered)
+                        if issueTokenStored {
+                            Button("Supprimer le jeton") {
+                                DiagnosticIssueCredentials.delete()
+                                issueTokenStored = false
+                                newIssueToken = ""
+                                issueReportStatus = "Jeton supprimé de l'Apple TV."
+                            }
+                            .buttonStyle(.bordered)
+                            .tint(.red)
+                        }
+                    }
+                    Text(issueTokenStored
+                         ? "Jeton configuré sur cette Apple TV (jamais affiché ni inclus dans le rapport)."
+                         : "Configure un jeton GitHub à accès limité, autorisé à créer des Issues uniquement dans le dépôt choisi.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Button {
+                        Task { await sendDiagnosticIssue() }
+                    } label: {
+                        Label(isSendingIssue ? "Envoi en cours…" : "Envoyer un rapport d'erreur",
+                              systemImage: "paperplane")
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(isSendingIssue || !issueTokenStored || launchTrace.entries.isEmpty)
+                    if let issueReportStatus {
+                        Text(issueReportStatus)
+                            .font(.callout)
+                            .foregroundStyle(.white)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    if let issueReportURL {
+                        Text(issueReportURL)
+                            .font(.caption)
+                            .foregroundStyle(.green)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    Text("Confidentialité : si le dépôt choisi est public, le rapport GitHub le sera aussi. Préfère un dépôt privé pour les diagnostics. Une erreur fatale tvOS/Jetsam n'est pas incluse dans ce journal.")
+                        .font(.caption)
+                        .foregroundStyle(.orange)
                     Text("Sécurité : seuls les jalons techniques définis dans le code sont enregistrés. Aucun identifiant, mot de passe, jeton, URL privée ou contenu brut de réponse réseau n'est inclus.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -235,6 +299,35 @@ struct SettingsView: View {
         .tint(BoosteroidTheme.violet)
         .fullScreenCover(isPresented: $showGameAccounts) {
             GameAccountsView()
+        }
+        .onAppear {
+            issueTokenStored = DiagnosticIssueCredentials.load() != nil
+        }
+    }
+
+    private func sendDiagnosticIssue() async {
+        guard !isSendingIssue else { return }
+        guard let token = DiagnosticIssueCredentials.load() else {
+            issueTokenStored = false
+            issueReportStatus = "Jeton GitHub absent : enregistre-le dans les réglages."
+            return
+        }
+        isSendingIssue = true
+        issueReportStatus = nil
+        issueReportURL = nil
+        defer { isSendingIssue = false }
+        do {
+            let issue = try await DiagnosticGitHubReporter.send(
+                repository: issueRepository,
+                token: token,
+                entries: launchTrace.entries,
+                checkpoint: lastLaunchCheckpoint,
+                interrupted: launchInProgress
+            )
+            issueReportStatus = "Rapport #\(issue.issueNumber) envoyé sur GitHub."
+            issueReportURL = issue.url
+        } catch {
+            issueReportStatus = "Envoi impossible : \(error.localizedDescription)"
         }
     }
 
