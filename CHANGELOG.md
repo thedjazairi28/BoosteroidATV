@@ -14,10 +14,36 @@
 | Base d'origine | `main` | `623c42b` | Version amont disponible | **Testée** : installation et streaming sur Apple TV |
 | V1 — Catalogue unifié | `feature/unified-catalog-v1` | `a788071` | **Réussie** le 20/11/2026 | **Non confirmé** |
 | V2 — Smart Experience | `feature/v2-smart-experience` | `fd60053` | **Réussie** le 20/11/2026 | **Non confirmé** |
+| V2.3 — Vidéo silencieuse automatique et résumé FR (expérimental) | `feature/v2.3-french-trailers` | `f3350be` | **Compilation #45023302268 en cours** | **Non testé sur Apple TV** |
 | V2.2 — Filtres et fiches enrichies, interface FR (expérimental) | `feature/v2.2-multi-store-filters` | `e4b1ba3` | **Réussie** le 22/11/2026 | **Non testé sur Apple TV** |
 | V2.1 — Stability | `feature/v2.1-stability` | `17df76b` | **Réussie** le 20/11/2026 | **3 OK, 3 KO** — 22/11/2026 (ligne rouge disparue, origine inconnue) |
 
-**Important :** V2 inclut V1, V2.1 inclut V1 + V2, et V2.2 part de V2.1. La branche `main` conserve le code de base : **aucune des branches expérimentales n'est fusionnée dans `main`** à la date de ce journal.
+**Important :** V2 inclut V1, V2.1 inclut V1 + V2, V2.2 part de V2.1 et V2.3 part de V2.2. La branche `main` conserve le code de base : **aucune des branches expérimentales n'est fusionnée dans `main`** à la date de ce journal.
+
+## 22 novembre 2026 — V2.3 « Aperçus animés silencieux » (expérimental)
+
+**Branche :** [feature/v2.3-french-trailers](https://github.com/thedjazairi28/BoosteroidATV/tree/feature/v2.3-french-trailers)  
+**Comparaison avec V2.2 :** [diff V2.2 → V2.3](https://github.com/thedjazairi28/BoosteroidATV/compare/feature/v2.2-multi-store-filters...feature/v2.3-french-trailers)  
+**Compilation :** [GitHub Actions #45023302268](https://github.com/thedjazairi28/BoosteroidATV/actions/runs/45023302268) — en cours lors de cette note.  
+**Tests sur Apple TV :** non effectués.
+
+### Demande utilisateur et réalisation
+
+- **Un aperçu vidéo démarre automatiquement à l'ouverture de la fiche** lorsque la vidéo publique d'un jeu est disponible, **sans son**, **en boucle**, derrière le texte et les boutons. Il ne s'agit pas d'un bouton pour lancer YouTube ou Twitch ni d'une rangée de vidéos sous le descriptif.
+- Lecture intégrée via **AVFoundation** (`AVQueuePlayer`, `AVPlayerLooper`, `AVPlayerLayer`), sans compte YouTube, Twitch ou Steam. Le lecteur ne comporte aucune commande visible.
+- Recherche des clips du jeu dans les métadonnées publiques du magasin Steam, en privilégiant une vidéo nommée « Gameplay » ; à défaut, première bande-annonce disponible.
+- **Retour sur une image fixe** si Steam ne référence pas le titre avec correspondance exacte ou ne renvoie pas de vidéo MP4 HTTPS compatible.
+- Lecture stoppée à la fermeture de la fiche, et changement de clip lors du passage à un autre jeu.
+- La récupération des vidéos est limitée aux fiches ouvertes ; un délai de 450 ms limite les requêtes lors des changements rapides de jeu.
+- En complément, la fiche affiche une **description en français issue des données publiques Steam**, si présente et reconnue comme française, ou une mention d'indisponibilité. Les résumés anglais ne sont pas volontairement affichés à sa place.
+
+### Limites connues et vérifications
+
+- **Compilation réussie ne veut pas dire lecture validée** : tester Red Dead Redemption 2 sur Apple TV, en particulier lecture, boucle, silence et arrêt de lecture à la fermeture.
+- La disponibilité des vidéos varie selon le jeu, le catalogue Steam et le format CDN. **Ce n'est pas du streaming Twitch/YouTube** ni une garantie d'extraits de gameplay pour tous les titres.
+- La recherche Steam par intitulé peut ne pas trouver certaines éditions ou des jeux non présents dans Steam.
+- La lecture automatique peut consommer de la bande passante ; aucun téléchargement permanent ni préchargement de toute la bibliothèque.
+- Cette branche reste indépendante et **ne corrige pas les trois tests KO de V2.1** (comptes, saisie iPhone et réglages).
 
 ## 22 novembre 2026 — V2.2 « Filtres multiples, fiches de jeux et français » (développement)
 
